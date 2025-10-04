@@ -40,10 +40,10 @@
       const radius = diameter / 2;
       const volume = (4/3) * Math.PI * Math.pow(radius, 3);
       const mass = density * volume;
-      const v_ms = velocity * 1000; // convert km/s to m/s
-      const energy = 0.5 * mass * v_ms * v_ms; // Joules
-      const mtTNT = energy / 4.184e15; // Megatons TNT
-      const severe = mtTNT * 1000; // meters
+      const v_ms = velocity * 1000;
+      const energy = 0.5 * mass * v_ms * v_ms; 
+      const mtTNT = energy / 4.184e15;
+      const severe = mtTNT * 1000;
       const moderate = mtTNT * 2000;
       const light = mtTNT * 3000;
       return { energy, mtTNT, radii: [severe, moderate, light] };
@@ -93,5 +93,6 @@
 
  <!-- This used some AI tools to help generate -->
  
+
 
 
