@@ -56,6 +56,5 @@ def visualize_asteroid(asteroid_id: str):
 
     return render_template('meteorViz.html', graph_html=graph_html)
 
-
 if __name__ == "__main__":
     app.run(debug=True)
