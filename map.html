@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Asteroid Impact Demo</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Initialize map (center on NYC for demo)
+    const map = L.map('map').setView([40.7128, -74.0060], 6);
+
+    // Add OSM basemap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Store blast circles so we can clear them on each click
+    let blastCircles = [];
+
+    // Click event
+    map.on('click', async function(e) {
+      const lat = e.latlng.lat;
+      const lon = e.latlng.lng;
+
+      // Clear old circles
+      blastCircles.forEach(c => map.removeLayer(c));
+      blastCircles = [];
+
+      // Call Open-Elevation API
+      const url = `https://api.open-elevation.com/api/v1/lookup?locations=${lat},${lon}`;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const elevation = data.results[0].elevation;
+
+        // Show popup with info
+        L.popup()
+          .setLatLng(e.latlng)
+          .setContent(`
+            <b>Impact Point</b><br>
+            Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}<br>
+            Elevation: ${elevation} m
+          `)
+          .openOn(map);
+
+        // Draw blast radius circles (in meters)
+        const radii = [5000, 15000, 30000]; // 5 km, 15 km, 30 km
+        const colors = ["red", "orange", "yellow"];
+
+        radii.forEach((r, i) => {
+          const circle = L.circle([lat, lon], {
+            radius: r,
+            color: colors[i],
+            weight: 2,
+            fillOpacity: 0.1
+          }).addTo(map);
+          blastCircles.push(circle);
+        });
+
+      } catch (err) {
+        console.error("Elevation lookup failed", err);
+      }
+    });
+  </script>
+</body>
+</html>
+ 
