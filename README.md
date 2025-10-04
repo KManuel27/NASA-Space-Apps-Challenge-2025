@@ -1,9 +1,9 @@
 # NASA-Space-Apps-Challenge-2025
 
-Project: Meteor Madness
-Competation: NASA Space Challenge
-Demo: N/A
-Location: London
+Project: Meteor Madness  
+Competation: NASA Space Challenge  
+Demo: N/A  
+Location: London  
 
 ## Members
 
