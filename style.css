@@ -1,0 +1,103 @@
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, #0b132b 0%, #1c2541 70%, #000000 100%);
+  font-family: 'Poppins', Arial, sans-serif;
+  overflow: hidden;
+  color: white;
+}
+
+/* Container covers full page */
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  padding: 2rem;
+  position: relative;
+}
+
+/* Centered content */
+.center-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+/* Logo placeholder */
+.logo-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  text-transform: uppercase;
+}
+
+/* Title */
+.title {
+  font-size: 2.5rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 0 10px #ffffff, 0 0 20px #00aaff, 0 0 30px #0088ff;
+}
+
+/* Start button */
+.start-button {
+  position: absolute;
+  bottom: 50px;
+  background: linear-gradient(90deg, #00aaff, #0044ff);
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  border-radius: 50px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px #00aaff, 0 0 20px #0044ff;
+}
+
+.start-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px #00aaff, 0 0 40px #0044ff;
+}
+
+/* Optional twinkling stars background animation */
+body::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 200%;
+  height: 200%;
+  background: transparent url('https://www.transparenttextures.com/patterns/stardust.png') repeat;
+  opacity: 0.3;
+  animation: stars 60s linear infinite;
+}
+
+@keyframes stars {
+  from { transform: translate(0, 0); }
+  to { transform: translate(-500px, -500px); }
+}
