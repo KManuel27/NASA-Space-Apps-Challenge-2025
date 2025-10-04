@@ -7,7 +7,7 @@ Location: London
 
 ## Members
 
-1. Kyra-Tamsin Manuel - QMUL ()
+1. Kyra-Tamsin Manuel - QMUL (MEng Aerospace Engineering)
 2. Brandon Rutagamirwa - QMUL (MSc Control Systems)
 3. Ali Ghobadian - QMUK ()
 4. Erik Cristian Croitoru - QMUL (BEng 2nd Year Aerospace Engineering)
