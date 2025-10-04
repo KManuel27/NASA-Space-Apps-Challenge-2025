@@ -11,7 +11,6 @@ app = Flask(__name__)
 def start_page():
     return render_template("startPage.html")  # No Python computation yet
 
-
 @app.route("/available_meteors")
 def available_meteors():
     # show page with date pickers and optionally fetch data
@@ -66,8 +65,17 @@ def visualize_asteroid(asteroid_id: str):
     except TypeError:
         # fallback to no-arg function if meteor_viz expects no param
         graph_html = meteor_viz.simulate_sun_earth_asteroid()
+        
+    asteroid_info = {
+        "name": obj.get("name", "Unknown"),
+        "diameter": obj.get("estimated_diameter", {}).get("meters", {}).get("estimated_diameter_max", "N/A"),
+        "closest_approach_date": obj.get("close_approach_data", [{}])[0].get("close_approach_date", "N/A"),
+        "miss_distance": obj.get("close_approach_data", [{}]).get("miss_distance", {}).get("close_approach_date", "N/A"),
+        "velocity": obj.get("close_approach_data", [{}])[0].get("relative_velocity", {}).get("kilometers_per_second", "N/A"),
+        "risk": "High" if obj.get("is_potentially_hazardous_asteroid") else "Minimal"
+    }
 
-    return render_template("meteorViz.html", graph_html=graph_html)
+    return render_template("meteorViz.html", graph_html=graph_html, asteroid_info=asteroid_info)
 
 
 def _median_diameter_km(neo):
@@ -146,7 +154,7 @@ def available_meteors_json():
             print(f"[SERVER] JSON endpoint returning {len(mapped)} mapped rows")
             return jsonify(mapped)
         # otherwise return as-is
-        print(f"[SERVER] JSON endpoint returning {len(rows) if isinstance(rows, list) else "unknown"} items")
+        print(f"[SERVER] JSON endpoint returning {len(rows) if isinstance(rows, list) else 'unknown'} items")
         return jsonify(rows)
     except Exception as e:
         print(f"[SERVER] JSON endpoint error: {e}")
