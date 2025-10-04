@@ -3,10 +3,91 @@
 <head>
     <title>Meteor Visualization</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        /* Sidebar styling */
+        #mySidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            top: 0;
+            right: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+            color: white;
+            z-index: 1000;
+        }
+
+        #mySidebar h2 {
+            padding-left: 20px;
+        }
+
+        #mySidebar p {
+            padding: 10px 20px;
+        }
+
+        #mySidebar .closebtn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 25px;
+            cursor: pointer;
+        }
+
+        /* Open button */
+        #openBtn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1001;
+            background-color: #111;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+        }
+    </style>
 </head>
 <body>
     <h1>Meteor Visualization</h1>
-    <!-- Embed Plotly graph here -->
+
+    <!-- Open Sidebar Button -->
+    <button id="openBtn" onclick="openSidebar()">Asteroid Info</button>
+
+    <!-- Sidebar -->
+    <div id="mySidebar">
+        <span class="closebtn" onclick="closeSidebar()">&times;</span>
+        <h2>Asteroid Data</h2>
+        <p><strong>Name:</strong> Apophis</p>
+        <p><strong>Diameter:</strong> 340 m</p>
+        <p><strong>Closest Approach:</strong> 2029-04-13</p>
+        <p><strong>Velocity:</strong> 30 km/s</p>
+        <p><strong>Risk:</strong> Minimal</p>
+    </div>
+
+    <!-- Plotly graph -->
     {{ graph_html|safe }}
+
+    <script>
+        const openBtn = document.getElementById("openBtn");
+        const sidebar = document.getElementById("mySidebar");
+
+        function openSidebar() {
+            sidebar.style.width = "300px";
+            openBtn.style.display = "none"; // hide button
+        }
+
+        function closeSidebar() {
+            sidebar.style.width = "0";
+            openBtn.style.display = "block"; // show button again
+        }
+    </script>
 </body>
 </html>
