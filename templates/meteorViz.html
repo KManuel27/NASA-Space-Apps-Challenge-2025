@@ -66,11 +66,12 @@
     <div id="mySidebar">
         <span class="closebtn" onclick="closeSidebar()">&times;</span>
         <h2>Asteroid Data</h2>
-        <p><strong>Name:</strong> Apophis</p>
-        <p><strong>Diameter:</strong> 340 m</p>
-        <p><strong>Closest Approach:</strong> 2029-04-13</p>
-        <p><strong>Velocity:</strong> 30 km/s</p>
-        <p><strong>Risk:</strong> Minimal</p>
+        <p><strong>Name:</strong> {{ asteroid_info.name }}</p>
+        <p><strong>Diameter:</strong> {{ asteroid_info.diameter }} m</p>
+        <p><strong>Miss Distance:</strong> {{ asteroid_info.miss_distance }} m</p>
+        <p><strong>Closest Approach Date:</strong> {{ asteroid_info.closest_approach_date }}</p>
+        <p><strong>Velocity:</strong> {{ asteroid_info.velocity }} km/s</p>
+        <p><strong>Risk:</strong> {{ asteroid_info.risk }}</p>
     </div>
 
     <!-- Plotly graph -->
