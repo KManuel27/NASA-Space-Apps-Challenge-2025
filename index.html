@@ -1,14 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hackathon Project</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Meteor Madness</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Hello Hackathon 🚀</h1>
-  <button onclick="sayHello()">Click Me</button>
+  <!-- Loading screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="card">
+      <div class="logo-wrap" aria-hidden="true">
+        <!-- Logo placeholder: replace with <img src="static/logo.png" alt="Meteor Madness logo"> -->
+        <div class="logo-placeholder">LOGO</div>
+      </div>
+
+      <h1 class="title">Meteor Madness</h1>
+
+      <div class="loader" aria-hidden="true">
+        <div class="spinner"></div>
+        <p class="loading-text">Loading…</p>
+      </div>
+    </div>
+
+    <button id="start-button" class="start-button" aria-label="Start Meteor Madness">Start</button>
+  </div>
+
+  <!-- Main content (hidden until start) -->
+  <main id="app" class="app hidden">
+    <section class="welcome">
+      <h2>Welcome to Meteor Madness</h2>
+      <p>Game / app content goes here.</p>
+    </section>
+  </main>
+
   <script src="script.js"></script>
 </body>
 </html>
+
