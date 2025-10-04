@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hazardous NEOs — Viewer</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <h1>Hazardous Asteroids Viewer 🛰️</h1>
+
+  <div class="controls">
+    <label class="file">
+      <input id="fileInput" type="file" accept=".json,.csv"/>
+      <span>Choose JSON/CSV</span>
+    </label>
+
+    <label class="toggle">
+      <input id="viewToggle" type="checkbox"/>
+      <span>Show table view</span>
+    </label>
+  </div>
+
+  <p id="status">Upload your Python-exported <code>asteroids.json</code> (sorted most → least hazardous).</p>
+
+  <div id="listView">
+    <ol id="asteroidList" class="asteroid-list"></ol>
+  </div>
+
+  <div id="tableView" class="hidden">
+    <div class="table-wrap">
+      <table id="asteroidTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Hazard score</th>
+            <th>Diameter (km)</th>
+            <th>Miss distance (km)</th>
+            <th>Miss distance (LD)</th>
+            <th>Velocity (km/s)</th>
+            <th>Approach date</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- cache-bust so you really load the new file -->
+  <script src="script.js?v=4"></script>
+</body>
+</html>
