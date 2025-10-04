@@ -1,17 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meteor Madness - Meteors</title>
-  <link rel="stylesheet" href="style.css">
+    <title>Meteor Visualization</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-  <h1>Meteor List</h1>
-  <ul id="meteorList"></ul>
-
-  <div id="meteorDetails" style="margin-top: 20px;"></div>
-
-  <script src="meteors.js"></script>
+    <h1>Meteor Visualization</h1>
+    <!-- Embed Plotly graph here -->
+    {{ graph_html|safe }}
 </body>
 </html>

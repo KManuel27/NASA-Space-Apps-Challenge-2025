@@ -1,20 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meteor Madness</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meteor Madness</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: white;
+            flex-direction: column;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #ff4c4c;
+            border: none;
+            border-radius: 8px;
+            color: white;
+        }
+        button:hover {
+            background-color: #ff0000;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="center-content">
-      <div class="logo-placeholder">LOGO</div>
-      <h1 class="title">Meteor Madness</h1>
-    </div>
-    <button class="start-button" id="startButton">Start</button>
-  </div>
-
-  <script src="script.js"></script>
+    <h1>Meteor Madness</h1>
+    <button onclick="window.location.href='/meteors'">Start</button>
 </body>
 </html>
