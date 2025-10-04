@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import meteor_viz
 import neoWs
 from datetime import date, timedelta
+from energy_impact import energy_impact_estimation
 
 app = Flask(__name__)
 
@@ -129,6 +130,35 @@ def _map_neo_to_row(neo):
     }
 
 
+# Internal AJAX endpoint to compute impact energy and ring radii
+@app.route("/api/energy")
+def api_energy():
+    """
+    Returns energy (Mt TNT) and approx ring radii in meters for given inputs.
+    Query params:
+      diameter_m (required) - diameter in meters
+      velocity_kms (required) - km/s
+      density_kg_m3 (optional) - default 3000
+    """
+    try:
+        diameter_m = float(request.args.get('diameter_m', '0'))
+        velocity_kms = float(request.args.get('velocity_kms', '0'))
+        density_kg_m3 = float(request.args.get('density_kg_m3', '3000'))
+        # use single-value estimation: pass same value as min/max in km
+        d_km = diameter_m / 1000.0
+        mt = energy_impact_estimation(d_km, d_km, velocity_kms, density_kg_m3)
+        # cube-root scaling for radii (same formula as client)
+        r20km = 1.2 * (mt ** (1/3))
+        r5km = 3.2 * (mt ** (1/3))
+        r1km = 7.0 * (mt ** (1/3))
+        rings_m = [r20km * 1000, r5km * 1000, r1km * 1000]
+        return jsonify({"mt": mt, "rings_m": rings_m})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+# Internal AJAX endpoint to fetch hazardous asteroids for a date range
+
+
 @app.route("/available_meteors.json")
 def available_meteors_json():
     # Return JSON for the requested start date window. This is called by the client via AJAX.
@@ -159,6 +189,7 @@ def available_meteors_json():
     except Exception as e:
         print(f"[SERVER] JSON endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/map")
 def map_page():

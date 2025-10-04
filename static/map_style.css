@@ -1,0 +1,33 @@
+
+#map { height: 100vh; width: 100%; }
+.input-panel {
+	position: absolute; top: 10px; left: 10px;
+	background: white; padding: 10px; border-radius: 8px;
+	font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+	z-index: 1000; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+.input-panel label { display:block; margin: 6px 0; }
+.muted { color:#666; font-size:12px; }
+
+/* Floating zoom control (bottom-right) */
+.floating-zoom-control{
+	position: absolute;
+	right: 12px;
+	bottom: 12px;
+	background: white;
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+	z-index: 1200;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+.floating-zoom-control .fz-btn{
+	border: none;
+	background: transparent;
+	padding: 8px 12px;
+	cursor: pointer;
+	font-size: 18px;
+	line-height: 1;
+}
+.floating-zoom-control .fz-btn:hover{ background: rgba(0,0,0,0.04); }
