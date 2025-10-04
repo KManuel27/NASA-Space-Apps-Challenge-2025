@@ -171,6 +171,7 @@
           '</div>' +
           '<div class="meta"><strong>Approach date:</strong> ' + esc(date) +
           (r.jpl_url ? ' | <a href="' + esc(r.jpl_url) + '" target="_blank" rel="noopener">JPL</a>' : '') +
+          (r.id ? ' | <a href="/meteors/visualize/' + esc(r.id) + '">Visualize</a>' : '') +
           '</div>';
 
         listEl.appendChild(li);
@@ -200,9 +201,33 @@
           '<td>' + (ld != null ? ld.toFixed(2) : '—') + '</td>' +
           '<td>' + (velKps != null ? velKps.toFixed(2) : '—') + '</td>' +
           '<td>' + esc(date) + '</td>' +
-          '<td>' + (r.jpl_url ? '<a href="' + esc(r.jpl_url) + '" target="_blank" rel="noopener">Link</a>' : '—') + '</td>';
+          '<td>' + (r.jpl_url ? '<a href="' + esc(r.jpl_url) + '" target="_blank" rel="noopener">Link</a>' : '—') +
+          (r.id ? ' | <a href="/meteors/visualize/' + esc(r.id) + '">Visualize</a>' : '') + '</td>';
         tableBody.appendChild(tr);
       }
+    }
+
+    // If server injected initial data, use it
+    try {
+      if (window.__INITIAL_ERROR__) {
+        setStatus('❌ ' + window.__INITIAL_ERROR__);
+      }
+      if (window.__INITIAL_ASTEROIDS__ && Array.isArray(window.__INITIAL_ASTEROIDS__)) {
+        var injected = window.__INITIAL_ASTEROIDS__;
+        // Detect if these are NeoWs-like full objects
+        if (injected.length && looksLikeNeoWs(injected[0])) {
+          records = injected.map(mapNeoToRow);
+        } else {
+          // assume already flat rows
+          records = injected;
+        }
+
+        records.sort(function (a, b) { return (b.hazard_score || 0) - (a.hazard_score || 0); });
+        setStatus('Loaded ' + records.length + ' hazardous NEOs (from server).');
+        render(records);
+      }
+    } catch (err) {
+      console.error('Error applying injected data:', err);
     }
 
     // -------- parsing ----------

@@ -60,6 +60,7 @@ ast_vel_rel = np.array([0, v_circ_ae, 0])
 
 asteroid_pos = np.zeros((num_steps, 3))
 asteroid_vel = np.zeros((num_steps, 3))
+# default placement relative to Earth
 asteroid_pos[0] = earth_pos[0] + ast_pos_rel
 asteroid_vel[0] = earth_vel[0] + ast_vel_rel
 sun_pos = np.zeros(3)
@@ -100,9 +101,32 @@ def create_sphere(center, radius, color, resolution=15):
     )
 
 
-def simulate_sun_earth_asteroid():
+def simulate_sun_earth_asteroid(asteroid_obj=None):
     # --- Static Sun ---
     sun_sphere = create_sphere([0, 0, 0], R_sun*30, "yellow")
+
+    # If caller provided an asteroid object (NeoWs), try to initialise
+    # the asteroid near the Earth using the approach data (meters, m/s).
+    if asteroid_obj:
+        try:
+            # find an earth approach
+            cad = None
+            for a in asteroid_obj.get('close_approach_data', []) or []:
+                if str(a.get('orbiting_body', '')).lower() == 'earth':
+                    cad = a
+                    break
+            if cad:
+                miss_km = float(cad.get('miss_distance', {}).get('kilometers', np.nan))
+                rel_kps = float(cad.get('relative_velocity', {}).get('kilometers_per_second', np.nan))
+                if np.isfinite(miss_km):
+                    miss_m = miss_km * 1000.0
+                    asteroid_pos[0] = earth_pos[0] + np.array([miss_m, 0, 0])
+                if np.isfinite(rel_kps):
+                    rel_ms = rel_kps * 1000.0
+                    asteroid_vel[0] = earth_vel[0] + np.array([0, rel_ms, 0])
+        except Exception:
+            # if anything fails, fall back to defaults computed earlier
+            pass
 
     # --- Dynamic objects (start state) ---
     earth_marker = go.Scatter3d(

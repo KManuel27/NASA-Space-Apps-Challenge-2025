@@ -120,6 +120,21 @@ def _filter_neo_feed(response_json: Dict[str, Any]) -> List[Dict[str, Any]]:
     return objs
 
 
+def get_hazardous_asteroids(start_date: str, end_date: str) -> List[Dict[str, Any]]:
+    """Public helper: fetch feed and return filtered hazardous asteroid objects.
+
+    Returns a list of simplified lookup objects (same shape as produced by
+    _filter_neo_feed).
+    """
+    response = _neo_feed(start_date, end_date)
+    return _filter_neo_feed(response)
+
+
+def lookup_asteroid(asteroid_id: str) -> Dict[str, Any]:
+    """Public helper: lookup a single asteroid by id using NeoWs lookup endpoint."""
+    return _neo_lookup(asteroid_id)
+
+
 if __name__ == "__main__":
     output_file = "meteor.json"
     start_date = "2025-10-01"
