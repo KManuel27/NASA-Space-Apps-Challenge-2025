@@ -1,0 +1,118 @@
+:root {
+  --maxw: 1100px;
+}
+
+* { box-sizing: border-box; }
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  margin: 2rem auto;
+  max-width: var(--maxw);
+  padding: 0 1rem;
+  line-height: 1.5;
+}
+
+h1 { margin-bottom: 1rem; }
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 1rem 0 0.5rem;
+}
+
+.file input { display: none; }
+.file span {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  border: 1px solid #d0d0d0;
+  background: #f6f6f6;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.file span:hover { background: #eee; }
+
+.toggle {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.95rem;
+}
+#status { color: #555; margin: 0.25rem 0 1rem; }
+
+.hidden { display: none; }
+
+.asteroid-list {
+  padding-left: 1.25rem;
+}
+
+.asteroid-list li {
+  background: #fafafa;
+  margin: 0.5rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.85rem;
+  background: #e8f0fe;
+  border: 1px solid #c6dafc;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  margin-left: 0.35rem;
+}
+
+.meta {
+  font-size: 0.95rem;
+  color: #333;
+  margin-top: 0.25rem;
+}
+.small { font-size: 0.85rem; color: #666; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+thead th {
+  position: sticky;
+  top: 0;
+  background: #f8f8f8;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  padding: 0.6rem 0.5rem;
+  font-weight: 600;
+}
+tbody td {
+  border-bottom: 1px solid #eee;
+  padding: 0.55rem 0.5rem;
+  vertical-align: top;
+}
+tbody tr:nth-child(even) { background: #fcfcfc; }
+a { color: inherit; }
+
+/* Force dark readable text inside asteroid list and table */
+.asteroid-list li {
+  color: #111; /* dark text */
+}
+
+.asteroid-list li .meta {
+  color: #333; /* slightly lighter than #111 for secondary info */
+}
+
+.asteroid-list li .small {
+  color: #555; /* for tiny notes */
+}
+
+/* Table text */
+#asteroidTable {
+  color: #111; /* all table cells dark */
+}
+
+#asteroidTable thead th {
+  color: #000; /* bold dark headers */
+}
