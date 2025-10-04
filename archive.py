@@ -19,7 +19,7 @@ default_api_key = os.environ.get("NASA_API_KEY", "DEMO_KEY")  #
 request_timeout = 10  # seconds
 database_file = "asteroids.db"
 PAGE_SIZE = 20  # fixed page size (do not change unless you know what you're doing)
-START_PAGE = 116  # change this constant to resume from a specific page (1-indexed)
+START_PAGE = 159  # change this constant to resume from a specific page (1-indexed)
 RETRIES = 3  # number of attempts for HTTP requests
 BACKOFF_FACTOR = 1.0  # backoff multiplier in seconds
 RATE_LIMIT_SLEEP = 0.12  # seconds to sleep between requests to avoid hammering the API
@@ -242,4 +242,3 @@ if __name__ == "__main__":
     # allow overriding start page via env var if desired
     start = int(os.environ.get("ARCHIVE_START_PAGE", START_PAGE))
     run(start)
-
