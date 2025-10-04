@@ -14,7 +14,6 @@ api_lookup_url_template = "https://api.nasa.gov/neo/rest/v1/neo/{id}"
 default_api_key = os.environ.get("NASA_API_KEY", "DEMO_KEY")  # SET ENV VAR NASA_API_KEY if you have one
 request_timeout = 10  # seconds
 
-
 def _request_json(url: str, params: Dict[str, Any]) -> Dict[str, Any]:
     """http get and return parsed json"""
     r = requests.get(url, params=params, timeout=request_timeout)
