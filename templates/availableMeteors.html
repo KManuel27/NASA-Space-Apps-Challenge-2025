@@ -38,8 +38,11 @@
     <!-- Only for debugging -->
     <label class="file">
       <input id="fileInput" type="file" accept=".json,.csv"/>
-      <span>Choose JSON/CSV</span>
+      <span>Choose JSON (Debug ony)</span>
     </label>
+    <!-- Status area used by the client script for user-visible messages -->
+    <div id="status" class="status" aria-live="polite"></div>
+    <!-- remove when live -->
 
     <label for="filterSelect">Sort by:</label>
     <select id="filterSelect">
@@ -55,6 +58,7 @@
       <span>Show table view</span>
     </label>
   </div>
+  
 
   <div id="listView">
     <ol id="asteroidList" class="asteroid-list"></ol>

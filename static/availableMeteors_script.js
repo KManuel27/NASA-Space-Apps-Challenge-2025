@@ -149,7 +149,7 @@
           records.sort((a, b) => (b.hazard_score || 0) - (a.hazard_score || 0));
 
           console.log('[DEBUG] parse complete - items:', records.length);
-          setStatus('Loaded ' + records.length + ' hazardous NEOs. Showing in file order (most → least hazardous).');
+          setStatus('Loaded ' + records.length + ' hazardous NEOs. Showing in preferred order.');
           hideFetchSpinner();
           applyFilterAndRender();
         } catch (err) {
