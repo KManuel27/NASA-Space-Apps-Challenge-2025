@@ -9,6 +9,10 @@ app = Flask(__name__)
 def start_page():
     return render_template("startPage.html")  # No Python computation yet
 
+@app.route("/available_meteors")
+def available_meteors():
+    # This function will return a list of available meteors
+    return render_template("availableMeteors.html")
 
 # --------------- Page 2: Meteor Visualization ---------------
 @app.route("/meteors")
