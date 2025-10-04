@@ -101,3 +101,34 @@ body::before {
   from { transform: translate(0, 0); }
   to { transform: translate(-500px, -500px); }
 }
+
+.meteor-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.meteor-card {
+  background-color: #222;
+  color: #fff;
+  padding: 15px;
+  width: 200px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.meteor-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+}
+
+.meteor-details {
+  margin-top: 30px;
+  background-color: #111;
+  color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 500px;
+}
