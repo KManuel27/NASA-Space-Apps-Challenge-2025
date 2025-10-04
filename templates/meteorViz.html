@@ -11,6 +11,8 @@
             color: white;
             margin: 0;
             padding: 0;
+            /* Prevent accidental horizontal scrollbar caused by the hidden sidebar */
+            overflow-x: hidden;
         }
 
         h1 {
@@ -42,12 +44,19 @@
             background-color: #ffffff;
             color: black;
             overflow: hidden;
-            transition: 0.5s;
+            transition: width 0.35s ease, padding 0.35s ease;
             display: flex;
             flex-direction: column;
             justify-content: space-between; /* pushes button to bottom */
-            padding: 20px;
+            /* keep padding out of the closed state so the background doesn't show as a strip */
+            padding: 0;
             box-sizing: border-box;
+        }
+
+        /* Open state applies the padding and width for the visible sidebar */
+        #mySidebar.open {
+            width: 300px;
+            padding: 20px;
         }
 
         .sidebar-content {
@@ -113,13 +122,20 @@
         const sidebar = document.getElementById("mySidebar");
 
         function openSidebar() {
-            sidebar.style.width = "300px";
-            openBtn.style.display = "none"; // hide button
+            sidebar.classList.add('open');
+            // hide the button after the sidebar finishes opening to avoid a visible jump
+            sidebar.addEventListener('transitionend', function onEnd(e) {
+                if (e.propertyName === 'width') {
+                    openBtn.style.display = 'none';
+                    sidebar.removeEventListener('transitionend', onEnd);
+                }
+            });
         }
 
         function closeSidebar() {
-            sidebar.style.width = "0";
-            openBtn.style.display = "block"; // show button again
+            // show button immediately so user can re-open while it closes
+            openBtn.style.display = 'block';
+            sidebar.classList.remove('open');
         }
 
         function visualizeImpact() {
