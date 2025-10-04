@@ -51,33 +51,52 @@ def available_meteors():
         error=error,
     )
 
-
 @app.route("/meteors/visualize/<asteroid_id>")
 def visualize_asteroid(asteroid_id: str):
-    # Lookup asteroid from NeoWs and render the meteor visualization page
-    try:
-        obj = neoWs.lookup_asteroid(asteroid_id)
-    except Exception as e:
-        return render_template("meteorViz.html", graph_html=f"<p>Error fetching asteroid: {e}</p>")
-
-    # produce graph HTML by passing the asteroid object to meteor_viz
-    try:
-        graph_html = meteor_viz.simulate_sun_earth_asteroid(obj)
-    except TypeError:
-        # fallback to no-arg function if meteor_viz expects no param
-        graph_html = meteor_viz.simulate_sun_earth_asteroid()
-        
+    # Default asteroid info (prevents Jinja error)
     asteroid_info = {
-        "name": obj.get("name", "Unknown"),
-        "diameter": obj.get("estimated_diameter", {}).get("meters", {}).get("estimated_diameter_max", "N/A"),
-        "closest_approach_date": obj.get("close_approach_data", [{}])[0].get("close_approach_date", "N/A"),
-        "miss_distance": obj.get("close_approach_data", [{}]).get("miss_distance", {}).get("close_approach_date", "N/A"),
-        "velocity": obj.get("close_approach_data", [{}])[0].get("relative_velocity", {}).get("kilometers_per_second", "N/A"),
-        "risk": "High" if obj.get("is_potentially_hazardous_asteroid") else "Minimal"
+        "name": "N/A",
+        "diameter": "N/A",
+        "closest_approach_date": "N/A",
+        "miss_distance": "N/A",
+        "velocity": "N/A",
+        "risk": "N/A"
     }
 
-    return render_template("meteorViz.html", graph_html=graph_html, asteroid_info=asteroid_info)
+    graph_html = "<p>Visualization not available.</p>"
 
+    try:
+        # Try to fetch asteroid from NASA NeoWs API
+        obj = neoWs.lookup_asteroid(asteroid_id)
+
+        # Safely generate graph
+        try:
+            graph_html = meteor_viz.simulate_sun_earth_asteroid(obj)
+        except TypeError:
+            graph_html = meteor_viz.simulate_sun_earth_asteroid()
+        except Exception as e:
+            graph_html = f"<p>Error generating visualization: {e}</p>"
+
+        # Extract close approach data safely
+        close_approach = obj.get("close_approach_data", [])
+        close_data = close_approach[0] if close_approach else {}
+
+        # Populate asteroid info
+        asteroid_info = {
+            "name": obj.get("name", "Unknown"),
+            "diameter": obj.get("estimated_diameter", {}).get("meters", {}).get("estimated_diameter_max", "N/A"),
+            "closest_approach_date": close_data.get("close_approach_date", "N/A"),
+            "miss_distance": close_data.get("miss_distance", {}).get("kilometers", "N/A"),
+            "velocity": close_data.get("relative_velocity", {}).get("kilometers_per_second", "N/A"),
+            "risk": "High" if obj.get("is_potentially_hazardous_asteroid") else "Minimal"
+        }
+
+    except Exception as e:
+        # If the API lookup itself fails, render with defaults
+        graph_html = f"<p>Error fetching asteroid: {e}</p>"
+
+    # Always render with asteroid_info (even if error)
+    return render_template("meteorViz.html", graph_html=graph_html, asteroid_info=asteroid_info)
 
 def _median_diameter_km(neo):
     try:
