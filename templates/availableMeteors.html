@@ -11,8 +11,20 @@
 
   <div class="controls">
     <form id="dateForm" method="get" action="/available_meteors">
-      <label>Start: <input id="startDate" name="start_date" type="date" value="{{ start_date }}" /></label>
-      <label>End: <input id="endDate" name="end_date" type="date" value="{{ end_date }}" /></label>
+      <label>
+        Start:
+        <input
+          id="startDate"
+          name="start_date"
+          type="date"
+          value="{{ start_date }}"
+          max="{{ start_max }}"
+        />
+      </label>
+      <label>
+        End:
+        <input id="endDate" type="date" value="{{ end_date }}" readonly />
+      </label>
       <button type="submit">Fetch</button>
     </form>
 

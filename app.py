@@ -15,13 +15,26 @@ def start_page():
 @app.route("/available_meteors")
 def available_meteors():
     # show page with date pickers and optionally fetch data
-    # default range: one month ago -> today
+    # default range: one week ago -> today
     today = date.today()
-    one_month_ago = today - timedelta(days=30)
+    one_week_ago = today - timedelta(days=7)
 
     # allow overriding via query params
-    start = request.args.get('start_date', one_month_ago.isoformat())
-    end = request.args.get('end_date', today.isoformat())
+    # We enforce a fixed 7-day window. The user may provide a start date,
+    # but it will be clamped so that the 7-day window ends no later than today.
+    start_str = request.args.get('start_date', one_week_ago.isoformat())
+    try:
+        start_dt = date.fromisoformat(start_str)
+    except Exception:
+        start_dt = one_week_ago
+
+    # Do not allow a start date later than one week ago (so end = start + 7 days <= today)
+    if start_dt > one_week_ago:
+        start_dt = one_week_ago
+
+    end_dt = start_dt + timedelta(days=7)
+    start = start_dt.isoformat()
+    end = end_dt.isoformat()
 
     asteroids = []
     error = None
@@ -31,7 +44,15 @@ def available_meteors():
         error = str(e)
 
     # render the template and inject initial data for the JS
-    return render_template("availableMeteors.html", start_date=start, end_date=end, asteroids=asteroids, error=error)
+    # Pass `start_max` so the client can limit the start-date picker to at most one_week_ago
+    return render_template(
+        "availableMeteors.html",
+        start_date=start,
+        end_date=end,
+        start_max=one_week_ago.isoformat(),
+        asteroids=asteroids,
+        error=error,
+    )
 
 
 @app.route('/meteors/visualize/<asteroid_id>')
