@@ -25,6 +25,7 @@
     <label>Diameter (m): <input id="diam" type="number" value="100"></label><br>
     <label>Velocity (km/s): <input id="vel" type="number" value="20"></label><br>
     <label>Density (kg/m³): <input id="dens" type="number" value="3000"></label><br>
+    <label>Pop Density (per km²): <input id="popdens" type="number" value="10000"></label><br>
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -41,37 +42,53 @@
       const volume = (4/3) * Math.PI * Math.pow(radius, 3);
       const mass = density * volume;
       const v_ms = velocity * 1000;
-      const energy = 0.5 * mass * v_ms * v_ms; 
+      const energy = 0.5 * mass * v_ms * v_ms;
       const mtTNT = energy / 4.184e15;
-      const severe = mtTNT * 1000;
-      const moderate = mtTNT * 2000;
-      const light = mtTNT * 3000;
+      const severe = 1.2 * Math.cbrt(mtTNT) * 1000;   // 20 psi
+      const moderate = 3.2 * Math.cbrt(mtTNT) * 1000; // 5 psi
+      const light = 7.0 * Math.cbrt(mtTNT) * 1000;    // 1 psi
+
       return { energy, mtTNT, radii: [severe, moderate, light] };
     }
 
     map.on('click', async function(e) {
       const lat = e.latlng.lat;
       const lon = e.latlng.lng;
+
       const d = parseFloat(document.getElementById('diam').value);
       const v = parseFloat(document.getElementById('vel').value);
       const dens = parseFloat(document.getElementById('dens').value);
+      const popdens = parseFloat(document.getElementById('popdens').value);
+
       blastCircles.forEach(c => map.removeLayer(c));
       blastCircles = [];
+
       const url = `https://api.open-elevation.com/api/v1/lookup?locations=${lat},${lon}`;
       try {
         const response = await fetch(url);
         const data = await response.json();
         const elevation = data.results[0].elevation;
+
         const { energy, mtTNT, radii } = calculateBlastRadii(d, v, dens);
+        const pops = radii.map(r => {
+          const area_km2 = Math.PI * Math.pow(r/1000, 2);
+          return Math.round(area_km2 * popdens);
+        });
+
         L.popup()
           .setLatLng(e.latlng)
           .setContent(`
             <b>Impact Point</b><br>
             Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}<br>
             Elevation: ${elevation} m<br>
-            Energy: ${mtTNT.toFixed(2)} MT TNT
+            Energy: ${mtTNT.toFixed(2)} MT TNT<br><br>
+            <b>Estimated Population Affected</b><br>
+            20 psi (severe): ~${pops[0].toLocaleString()}<br>
+            5 psi (moderate): ~${pops[1].toLocaleString()}<br>
+            1 psi (light): ~${pops[2].toLocaleString()}
           `)
           .openOn(map);
+
         const colors = ["red", "orange", "yellow"];
         radii.forEach((r, i) => {
           const circle = L.circle([lat, lon], {
@@ -91,8 +108,10 @@
 </body>
 </html>
 
+
  <!-- This used some AI tools to help generate -->
  
+
 
 
 
