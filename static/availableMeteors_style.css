@@ -42,6 +42,31 @@ h1 { margin-bottom: 1rem; }
 
 .hidden { display: none; }
 
+/* Loading overlay */
+#loadingOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: rgba(0,0,0,0.35);
+  z-index: 9999;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text { color: #fff; font-weight: 600; font-size: 1rem; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .asteroid-list {
   padding-left: 1.25rem;
 }

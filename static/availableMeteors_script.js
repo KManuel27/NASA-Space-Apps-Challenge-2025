@@ -207,6 +207,60 @@
       }
     }
 
+      // -------- date auto-update + loading overlay --------
+      var startDateInput = document.getElementById('startDate');
+      var endDateInput = document.getElementById('endDate');
+      var loadingOverlay = document.getElementById('loadingOverlay');
+
+      function showLoading() { if (loadingOverlay) loadingOverlay.classList.remove('hidden'); }
+      function hideLoading() { if (loadingOverlay) loadingOverlay.classList.add('hidden'); }
+
+      // debounce helper
+      function debounce(fn, wait) {
+        var t = null;
+        return function () {
+          var args = arguments;
+          clearTimeout(t);
+          t = setTimeout(function () { fn.apply(null, args); }, wait);
+        };
+      }
+
+      function clampAndSubmit() {
+        if (!startDateInput || !endDateInput) return;
+        var startVal = startDateInput.value;
+        var maxVal = startDateInput.max || '';
+        if (maxVal && startVal > maxVal) {
+          startVal = maxVal;
+          startDateInput.value = maxVal;
+        }
+        // compute end = start + 7 days
+        try {
+          var s = new Date(startVal + 'T00:00:00');
+          if (!isNaN(s)) {
+            var e = new Date(s.getTime() + 7 * 24 * 3600 * 1000);
+            var ye = e.getFullYear();
+            var me = String(e.getMonth() + 1).padStart(2, '0');
+            var de = String(e.getDate()).padStart(2, '0');
+            var endStr = ye + '-' + me + '-' + de;
+            endDateInput.value = endStr;
+          }
+        } catch (err) { /* ignore */ }
+
+        // show loading overlay and submit form
+        showLoading();
+        // small delay so spinner is visible before navigation
+        setTimeout(function () {
+          var form = document.getElementById('dateForm');
+          if (form) form.submit();
+        }, 120);
+      }
+
+      var debouncedClamp = debounce(clampAndSubmit, 250);
+      if (startDateInput) startDateInput.addEventListener('change', debouncedClamp);
+
+      // hide loading unless form submission actually occurs (for file uploads etc)
+      window.addEventListener('pageshow', function () { hideLoading(); });
+
     // If server injected initial data, use it
     try {
       if (window.__INITIAL_ERROR__) {
