@@ -14,25 +14,21 @@ def start_page():
 @app.route("/meteors")
 def meteor_list(): #ORBITAL MECHANICS AND VISUALISATION CODE:
 
-    import numpy as np
-import plotly.graph_objs as go
-
 # Constants
-G = 6.67430e-11  # gravitational constant
+G = 6.67430e-11
 M_sun = 1.989e30
 M_earth = 5.972e24
 R_sun = 6.9634e8
 R_earth = 6.371e6
-R_asteroid = 5e5  # For visualization
+R_asteroid = 5e5
 AU = 1.496e11
 
-num_steps = 365
+num_steps = 365   # one year (daily steps)
 dt = 60 * 60 * 24  # 24 hours
 
 a_earth = AU
 e_earth = 0.0167
 T_earth = 365.25 * 24 * 3600
-
 mu_sun = G * M_sun
 
 def kepler_E(M, e, tol=1e-8):
@@ -47,6 +43,7 @@ def kepler_E(M, e, tol=1e-8):
 def true_anomaly(E, e):
     return 2*np.arctan2(np.sqrt(1+e)*np.sin(E/2), np.sqrt(1-e)*np.cos(E/2))
 
+# Precompute Earth orbit
 earth_pos = np.zeros((num_steps, 3))
 earth_vel = np.zeros((num_steps, 3))
 
@@ -59,7 +56,6 @@ for i in range(num_steps):
     x = r * np.cos(nu)
     y = r * np.sin(nu)
     earth_pos[i] = [x, y, 0]
-
     v = np.sqrt(mu_sun*(2/r - 1/a_earth))
     vx = -v * np.sin(nu)
     vy = v * np.cos(nu)
@@ -73,16 +69,11 @@ ast_vel_rel = np.array([0, v_circ_ae, 0])
 
 asteroid_pos = np.zeros((num_steps, 3))
 asteroid_vel = np.zeros((num_steps, 3))
-
 asteroid_pos[0] = earth_pos[0] + ast_pos_rel
 asteroid_vel[0] = earth_vel[0] + ast_vel_rel
-
 sun_pos = np.zeros(3)
 
-collision_step = None
-impact_lat = None
-impact_lon = None
-
+# Propagation loop
 for i in range(1, num_steps):
     r_sun_earth = sun_pos - earth_pos[i-1]
     dist_sun_earth = np.linalg.norm(r_sun_earth)
@@ -102,139 +93,112 @@ for i in range(1, num_steps):
     asteroid_vel[i] = asteroid_vel[i-1] + acc_ast * dt
     asteroid_pos[i] = asteroid_pos[i-1] + asteroid_vel[i] * dt
 
-    if collision_step is None and dist_earth_ast <= R_earth:
-        collision_step = i
-        impact_vector = asteroid_pos[i] - earth_pos[i]
-        x, y, z = impact_vector
-        r = np.linalg.norm(impact_vector)
-        lat = np.arcsin(z / r) * 180 / np.pi
-        lon = np.arctan2(y, x) * 180 / np.pi
-        impact_lat = lat
-        impact_lon = lon
-        print(f"Collision at step {i}, Lat: {lat:.2f}°, Lon: {lon:.2f}°")
-        break
-
-# TEXTURE URL (earth map)
-earth_texture_url = 'https://raw.githubusercontent.com/plotly/datasets/master/earth.jpg'
-
-def create_sphere(center, radius, color, opacity=0.9, resolution=30, texture_url=None):
-    u = np.linspace(0, 2 * np.pi, resolution)
+# --- Plotting helpers ---
+def create_sphere(center, radius, color, resolution=15):
+    u = np.linspace(0, 2*np.pi, resolution)
     v = np.linspace(0, np.pi, resolution)
     x = center[0] + radius * np.outer(np.cos(u), np.sin(v))
     y = center[1] + radius * np.outer(np.sin(u), np.sin(v))
     z = center[2] + radius * np.outer(np.ones_like(u), np.cos(v))
+    return go.Surface(
+        x=x, y=y, z=z,
+        colorscale=[[0, color], [1, color]],
+        opacity=0.9, showscale=False,
+        hoverinfo="skip", name="Sun"
+    )
 
-    if texture_url:
-        return go.Surface(
-            x=x, y=y, z=z,
-            surfacecolor=np.tile(np.linspace(0, 1, resolution), (resolution, 1)),
-            colorscale='Earth',
-            cmin=0, cmax=1,
-            showscale=False,
-            opacity=opacity,
-            hoverinfo='skip'
-        )
-    else:
-        return go.Surface(
-            x=x, y=y, z=z,
-            colorscale=[[0, color], [1, color]],
-            opacity=opacity,
-            showscale=False,
-            hoverinfo='skip'
-        )
+# --- Static Sun ---
+sun_sphere = create_sphere([0,0,0], R_sun*30, "yellow")
 
-def create_earth_grid(center, radius, res=20):
-    lon_lines = []
-    for lon_deg in np.linspace(-180, 180, 12):
-        lon = np.radians(lon_deg)
-        theta = np.linspace(0, np.pi, res)
-        x = np.array(center[0] + radius * np.cos(lon) * np.sin(theta)).flatten()
-        y = np.array(center[1] + radius * np.sin(lon) * np.sin(theta)).flatten()
-        z = np.array(center[2] + radius * np.cos(theta)).flatten()
-        lon_lines.append(go.Scatter3d(
-            x=x, y=y, z=z, mode='lines',
-            line=dict(color='black', width=1),
-            hoverinfo='skip',
-            showlegend=False   # prevent from showing in legend
-        ))
-    lat_lines = []
-    for lat_deg in np.linspace(-90, 90, 9):
-        lat = np.radians(lat_deg)
-        phi = np.linspace(-np.pi, np.pi, res)
-        x = np.array(center[0] + radius * np.cos(lat) * np.cos(phi)).flatten()
-        y = np.array(center[1] + radius * np.cos(lat) * np.sin(phi)).flatten()
-        z = np.array(center[2] + radius * np.sin(lat)).flatten()
-        lat_lines.append(go.Scatter3d(
-            x=x, y=y, z=z, mode='lines',
-            line=dict(color='black', width=1),
-            hoverinfo='skip',
-            showlegend=False   # prevent from showing in legend
-        ))
-    return lon_lines + lat_lines
+# --- Dynamic objects (start state) ---
+earth_marker = go.Scatter3d(
+    x=[earth_pos[0,0]], y=[earth_pos[0,1]], z=[earth_pos[0,2]],
+    mode="markers", marker=dict(size=5, color="blue"), name="Earth"
+)
+asteroid_marker = go.Scatter3d(
+    x=[asteroid_pos[0,0]], y=[asteroid_pos[0,1]], z=[asteroid_pos[0,2]],
+    mode="markers", marker=dict(size=4, color="red"), name="Asteroid"
+)
+earth_traj = go.Scatter3d(
+    x=[earth_pos[0,0]], y=[earth_pos[0,1]], z=[earth_pos[0,2]],
+    mode="lines", line=dict(color="blue"), name="Earth trajectory"
+)
+asteroid_traj = go.Scatter3d(
+    x=[asteroid_pos[0,0]], y=[asteroid_pos[0,1]], z=[asteroid_pos[0,2]],
+    mode="lines", line=dict(color="red"), name="Asteroid trajectory"
+)
 
-sun_sphere = create_sphere([0,0,0], R_sun*50, 'yellow')
+# --- Labels (initial frame) ---
+sun_label = go.Scatter3d(
+    x=[0], y=[0], z=[R_sun*100], mode="text", text=["Sun"],
+    textfont=dict(size=14, color="yellow"), showlegend=False
+)
+earth_label = go.Scatter3d(
+    x=[earth_pos[0,0]], y=[earth_pos[0,1]], z=[earth_pos[0,2]+R_earth*2000],
+    mode="text", text=["Earth"], textfont=dict(size=12, color="blue"), showlegend=False
+)
+asteroid_label = go.Scatter3d(
+    x=[asteroid_pos[0,0]], y=[asteroid_pos[0,1]], z=[asteroid_pos[0,2]+R_asteroid*2000],
+    mode="text", text=["Asteroid"], textfont=dict(size=12, color="red"), showlegend=False
+)
 
-max_frame = collision_step if collision_step else num_steps - 1
-
+# --- Frames ---
 frames = []
-for step in range(max_frame+1):
-    earth_sphere = create_sphere(earth_pos[step], R_earth*500, 'blue', texture_url=earth_texture_url)
-    asteroid_sphere = create_sphere(asteroid_pos[step], R_asteroid*500, 'red', resolution=10)
-    earth_grid_lines = create_earth_grid(earth_pos[step], R_earth*500)
+for k in range(1, num_steps):
+    frames.append(go.Frame(
+        data=[
+            dict(type="scatter3d", x=[earth_pos[k,0]], y=[earth_pos[k,1]], z=[earth_pos[k,2]]),    # Earth marker
+            dict(type="scatter3d", x=[asteroid_pos[k,0]], y=[asteroid_pos[k,1]], z=[asteroid_pos[k,2]]), # Asteroid marker
+            dict(type="scatter3d", x=earth_pos[:k,0], y=earth_pos[:k,1], z=earth_pos[:k,2]),      # Earth traj
+            dict(type="scatter3d", x=asteroid_pos[:k,0], y=asteroid_pos[:k,1], z=asteroid_pos[:k,2]), # Asteroid traj
+            dict(type="surface", x=sun_sphere.x, y=sun_sphere.y, z=sun_sphere.z),  # Sun
+            dict(type="scatter3d", x=[0], y=[0], z=[R_sun*100], text=["Sun"]),   # Sun label
+            dict(type="scatter3d", x=[earth_pos[k,0]], y=[earth_pos[k,1]], z=[earth_pos[k,2]+R_earth*2000], text=["Earth"]),
+            dict(type="scatter3d", x=[asteroid_pos[k,0]], y=[asteroid_pos[k,1]], z=[asteroid_pos[k,2]+R_asteroid*2000], text=["Asteroid"])
+        ],
+        name=str(k)
+    ))
 
-    earth_traj = go.Scatter3d(
-        x=earth_pos[:step+1,0], y=earth_pos[:step+1,1], z=earth_pos[:step+1,2],
-        mode='lines', line=dict(color='blue'), name='Earth trajectory'
-    )
-    asteroid_traj = go.Scatter3d(
-        x=asteroid_pos[:step+1,0], y=asteroid_pos[:step+1,1], z=asteroid_pos[:step+1,2],
-        mode='lines', line=dict(color='red'), name='Asteroid trajectory'
-    )
-
-    labels = [
-        go.Scatter3d(x=[0], y=[0], z=[0], mode='text', text=["Sun"], textfont=dict(size=14, color='yellow'), showlegend=False),
-        go.Scatter3d(x=[earth_pos[step][0]], y=[earth_pos[step][1]], z=[earth_pos[step][2]+R_earth*1000],
-                     mode='text', text=["Earth"], textfont=dict(size=12, color='blue'), showlegend=False),
-        go.Scatter3d(x=[asteroid_pos[step][0]], y=[asteroid_pos[step][1]], z=[asteroid_pos[step][2]+R_asteroid*1000],
-                     mode='text', text=["Asteroid"], textfont=dict(size=12, color='red'), showlegend=False)
-    ]
-
-    frame_data = [sun_sphere, earth_sphere, asteroid_sphere, earth_traj, asteroid_traj] + earth_grid_lines + labels
-    frames.append(go.Frame(data=frame_data, name=str(step)))
-
-# Initial display
-data = frames[0].data
-
-axis_range = 1.5 * AU
+# --- Layout ---
+axis_range = 2 * AU
 layout = go.Layout(
     title="Sun-Earth-Asteroid System",
-    width=1000, height=900,
+    width=900, height=800,
     scene=dict(
-        xaxis=dict(range=[-axis_range, axis_range], gridcolor='black', backgroundcolor='black'),
-        yaxis=dict(range=[-axis_range, axis_range], gridcolor='black', backgroundcolor='black'),
-        zaxis=dict(range=[-axis_range, axis_range], gridcolor='black', backgroundcolor='black'),
-        aspectmode='cube'
+        xaxis=dict(range=[-axis_range, axis_range], backgroundcolor="black", gridcolor="gray"),
+        yaxis=dict(range=[-axis_range, axis_range], backgroundcolor="black", gridcolor="gray"),
+        zaxis=dict(range=[-axis_range, axis_range], backgroundcolor="black", gridcolor="gray"),
+        aspectmode="cube"
     ),
+    paper_bgcolor="black",
+    plot_bgcolor="black",
+    font=dict(color="white"),
     updatemenus=[dict(
-        type='buttons', showactive=False, y=1.1, x=1.3,
+        type="buttons", showactive=False, y=1.05, x=1.2,
         buttons=[
-            dict(label='Play', method='animate', args=[None, {"frame": {"duration": 30, "redraw": True},
-                                                              "fromcurrent": True, "transition": {"duration": 0}}]),
-            dict(label='Pause', method='animate', args=[[None], {"frame": {"duration": 0, "redraw": False},
-                                                                 "mode": "immediate", "transition": {"duration": 0}}])
-        ])
-    ],
+            dict(label="Play", method="animate",
+                 args=[None, {"frame": {"duration": 50, "redraw": True},
+                              "fromcurrent": True, "transition": {"duration": 0}}]),
+            dict(label="Pause", method="animate",
+                 args=[[None], {"frame": {"duration": 0, "redraw": False},
+                                "mode": "immediate"}])
+        ]
+    )],
     sliders=[dict(
-        steps=[dict(method='animate', args=[[str(k)], dict(mode='immediate',
-                                                           frame=dict(duration=0, redraw=True),
-                                                           transition=dict(duration=0))],
-                    label=str(k)) for k in range(max_frame+1)],
-        active=0, transition=dict(duration=0),
-        x=0.1, y=0, currentvalue=dict(prefix='Step: ')
+        steps=[dict(method="animate", args=[[str(k)], dict(mode="immediate",
+                                                           frame=dict(duration=0, redraw=True))],
+                    label=str(k)) for k in range(num_steps)],
+        active=0, x=0.1, y=0,
+        currentvalue=dict(prefix="Step: ")
     )]
 )
 
-fig = go.Figure(data=data, layout=layout, frames=frames)
+# --- Figure ---
+fig = go.Figure(
+    data=[earth_marker, asteroid_marker, earth_traj, asteroid_traj, sun_sphere,
+          sun_label, earth_label, asteroid_label],
+    layout=layout, frames=frames
+)
 fig.show()
 
     # Convert Plotly figure to HTML div
