@@ -4,10 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hazardous NEOs — Viewer</title>
-  <link rel="stylesheet" href="../static/availableMeteors_style.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='availableMeteors_style.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}" />
 </head>
 <body>
+  <header class="site-header">
+    <h1 class="site-title"><a href="/">Meteor Madness</a></h1>
+    <div class="site-controls">
+      <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
+    </div>
+  </header>
+
   <h1>Hazardous Asteroids Viewer 🛰️</h1>
+
+  
 
   <div class="controls">
     <form id="dateForm" method="get" action="/available_meteors">
@@ -105,5 +115,6 @@
     {% endif %}
   </script>
   <script src="../static/availableMeteors_script.js?v=5"></script>
+  <script src="{{ url_for('static', filename='site_common.js') }}"></script>
 </body>
 </html>

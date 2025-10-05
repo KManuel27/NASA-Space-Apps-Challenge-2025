@@ -4,7 +4,6 @@
 
 * { box-sizing: border-box; }
 body {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   margin: 2rem auto;
   max-width: var(--maxw);
   padding: 0 1rem;
@@ -25,12 +24,13 @@ h1 { margin-bottom: 1rem; }
 .file span {
   display: inline-block;
   padding: 0.6rem 1rem;
-  border: 1px solid #d0d0d0;
-  background: #f6f6f6;
   border-radius: 8px;
   cursor: pointer;
+  background: var(--file-bg, #f6f6f6);
+  color: var(--file-color, inherit);
+  border: 1px solid rgba(0,0,0,0.08);
 }
-.file span:hover { background: #eee; }
+.file span:hover { filter: brightness(0.98); }
 
 .toggle {
   display: inline-flex;

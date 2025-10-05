@@ -7,8 +7,21 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='map_style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}" />
+  <style>
+    /* Page-local: ensure map sits below the fixed header like other pages (no white strip) */
+    body { padding-top: calc(var(--header-height) + 0.5rem) !important; }
+    #map { height: calc(100vh - var(--header-height)) !important; margin-top: 0 !important; top: 0; }
+  </style>
 </head>
 <body>
+  <header class="site-header">
+    <h1 class="site-title"><a href="/">Meteor Madness</a></h1>
+    <div class="site-controls">
+      <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
+    </div>
+  </header>
+
   <div id="map"></div>
 
   <div class="input-panel">
@@ -21,6 +34,7 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="{{ url_for('static', filename='map_script.js') }}"></script>
+  <script src="{{ url_for('static', filename='site_common.js') }}"></script>
 </body>
 </html>
 

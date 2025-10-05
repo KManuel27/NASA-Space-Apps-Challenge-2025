@@ -4,33 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meteor Madness</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-            background-color: #111;
-            color: white;
-            flex-direction: column;
-        }
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            cursor: pointer;
-            background-color: #ff4c4c;
-            border: none;
-            border-radius: 8px;
-            color: white;
-        }
-        button:hover {
-            background-color: #ff0000;
-        }
-    </style>
+        <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}" />
 </head>
 <body>
-    <h1>Meteor Madness</h1>
-    <button onclick="window.location.href='/available_meteors'">Start</button>
+    <header class="site-header">
+        <h1 class="site-title"><a href="/">Meteor Madness</a></h1>
+        <div class="site-controls">
+            <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
+        </div>
+    </header>
+
+    <div class="page-wrapper">
+    <main class="main-content">
+        <nav class="tabs" role="tablist">
+            <button role="tab" aria-selected="true" data-tab="home">Home</button>
+            <button role="tab" aria-selected="false" data-tab="about">About</button>
+            <button role="tab" aria-selected="false" data-tab="references">References</button>
+            <button role="tab" aria-selected="false" data-tab="discussions">Discussions</button>
+        </nav>
+
+        <section id="tab-home" class="tab-panel">
+            <h2>Home</h2>
+            <p>Placeholder</p>
+            <p>
+                    <button class="primary" onclick="window.location.href='/available_meteors'">Begin</button>
+            </p>
+        </section>
+
+        <section id="tab-about" class="tab-panel hidden">
+            <h2>About</h2>
+            <p>Placeholder</p>
+        </section>
+
+        <section id="tab-references" class="tab-panel hidden">
+            <h2>References</h2>
+            <p>Placeholder</p>
+        </section>
+
+        <section id="tab-discussions" class="tab-panel hidden">
+            <h2>Discussions</h2>
+            <p>Placeholder</p>
+        </section>
+    </main>
+    <footer class="site-footer">
+        <div>Credits: NASA Space Apps Challenge demo — Placeholder</div>
+    </footer>
+    </div>
+
+        <script src="{{ url_for('static', filename='site_common.js') }}"></script>
 </body>
 </html>

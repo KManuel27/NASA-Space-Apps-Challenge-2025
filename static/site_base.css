@@ -1,0 +1,188 @@
+/* site_base.css — shared layout and theme variables */
+:root{
+  --header-height: 64px;
+  --accent: #0ea5ff;
+  --accent-dark: #0066cc;
+  --bg-light: #ffffff;
+  --text-light: #0b1220;
+  --header-light: #ffffff;
+  --bg-dark: #07080c;
+  --text-dark: #f7f9fb;
+  --header-dark: #0b0c10;
+}
+
+html.theme-light body {
+  background: var(--bg-light);
+  color: var(--text-light);
+}
+html.theme-dark body {
+  background: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+/* set consistent site font */
+body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+
+/* Header */
+.site-header{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  z-index: 1200;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+}
+html.theme-light .site-header{ background: var(--header-light); color: var(--text-light); }
+html.theme-dark .site-header{ background: var(--header-dark); color: var(--text-dark); }
+
+.site-title{ font-size: 1.1rem; font-weight: 700; }
+.site-title a{ color: inherit; text-decoration: none; }
+
+.site-controls{ display:flex; gap:0.5rem; align-items:center; }
+.site-controls button{ padding:6px 10px; border-radius:6px; border-width:1px; border-style:solid; background:transparent; cursor:pointer; }
+html.theme-light .site-controls button{ border-color: rgba(0,0,0,0.12); color: var(--text-light); }
+html.theme-dark .site-controls button{ border-color: rgba(255,255,255,0.12); color: var(--text-dark); background: rgba(255,255,255,0.02); }
+
+/* Push page content below the header */
+body{ padding-top: calc(var(--header-height) + 0.5rem); transition: background 200ms ease, color 200ms ease; }
+
+.main-content{ max-width: 1100px; margin: 0 auto; padding: 1rem; }
+
+.hidden{ display:none !important; }
+
+/* Tidy default buttons used across templates */
+button.primary{ display:inline-block; background-image: linear-gradient(90deg,var(--accent), var(--accent-dark)) !important; background-color: var(--accent-dark) !important; color: #fff !important; -webkit-text-fill-color: #fff !important; border: none; padding: 0.7rem 1.2rem; border-radius: 10px; cursor: pointer; font-weight:600; font-size:1rem; text-shadow: none !important; }
+
+/* ensure primary buttons are visible in light theme too */
+html.theme-light button.primary{ color: white !important; box-shadow: 0 6px 18px rgba(0,102,204,0.12); border: 1px solid rgba(0,0,0,0.08); }
+html.theme-dark button.primary{ color: white !important; box-shadow: 0 6px 18px rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.06); }
+/* Force primary button backgrounds in both themes to override generic button rules */
+html.theme-light button.primary, html.theme-dark button.primary {
+  background-image: linear-gradient(90deg,var(--accent), var(--accent-dark)) !important;
+  background-color: var(--accent-dark) !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+/* stronger contrasting border depending on theme */
+html.theme-light button.primary{ border: 1px solid rgba(0,0,0,0.12) !important; }
+html.theme-dark button.primary{ border: 1px solid rgba(255,255,255,0.06) !important; }
+button.primary:hover{ transform: translateY(-1px); filter:brightness(1.03); }
+button.primary:focus{ outline: 3px solid rgba(14,165,255,0.18); }
+
+/* Ensure forms and inputs are readable in both themes */
+input, select, textarea { color: inherit; background: transparent; border: 1px solid rgba(0,0,0,0.08); padding: 0.3rem 0.5rem; border-radius:6px; }
+
+/* Small utility */
+.sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(1px, 1px, 1px, 1px); }
+
+/* Tabs: highlight when aria-selected is true */
+[role="tab"]{
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  background: transparent;
+}
+[role="tab"]:focus{ outline: 2px solid rgba(14,165,255,0.25); }
+[role="tab"][aria-selected="true"]{
+  background: var(--accent);
+  color: white;
+  border-color: rgba(0,0,0,0.08);
+}
+
+/* Footer spacing */
+.site-footer{ text-align:center; padding:1rem; margin-top:2rem; color: inherit; }
+
+/* Plotly visual tweaks: prefer transparent background and inherit text colour */
+.js-plotly-plot{ background: transparent !important; }
+.js-plotly-plot .main-svg { background: transparent !important; }
+.js-plotly-plot svg { color: inherit; }
+.js-plotly-plot .legendtext, .js-plotly-plot .gtitle { fill: currentColor !important; }
+.js-plotly-plot .xtick, .js-plotly-plot .ytick { fill: currentColor !important; }
+
+/* Sidebar should be above plots */
+#mySidebar{ z-index: 1400 !important; }
+
+/* Page wrapper helper: ensure footer sits at bottom when content is short */
+.page-wrapper{ min-height: calc(100vh - var(--header-height)); display:flex; flex-direction:column; }
+.page-wrapper > .main-content{ flex: 1 0 auto; }
+.page-wrapper > .site-footer{ margin-top: auto; }
+
+/* Ensure plot container doesn't obscure sidebars by default */
+.plotly-theme-container { z-index: 100; position: relative; }
+
+/* Theme-aware form controls (global) */
+html.theme-dark input, html.theme-dark select, html.theme-dark textarea, html.theme-dark button, html.theme-dark .controls input, html.theme-dark .input-panel input, html.theme-dark .controls select {
+  background: rgba(255,255,255,0.03);
+  color: var(--text-dark);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+html.theme-light input, html.theme-light select, html.theme-light textarea, html.theme-light button, html.theme-light .controls input, html.theme-light .input-panel input, html.theme-light .controls select {
+  background: #fff;
+  color: var(--text-light);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+/* Make selects and date inputs readable */
+input[type="date"], input[type="text"], input[type="number"], select { padding: 0.45rem 0.6rem; border-radius:6px; }
+
+/* Tables and list backgrounds */
+html.theme-dark table, html.theme-dark .asteroid-list li { background: rgba(255,255,255,0.02); color: var(--text-dark); }
+html.theme-light table, html.theme-light .asteroid-list li { background: #fff; color: var(--text-light); }
+
+/* Sidebar theme rules */
+#mySidebar{ transition: background 200ms ease, color 200ms ease; }
+html.theme-dark #mySidebar.open{ background: rgba(6,6,8,0.92); color: var(--text-dark); box-shadow: -6px 0 24px rgba(0,0,0,0.6); }
+html.theme-light #mySidebar.open{ background: var(--bg-light); color: var(--text-light); box-shadow: -6px 0 18px rgba(0,0,0,0.06); }
+
+/* Ensure sidebar close button contrasts */
+html.theme-dark #mySidebar .closebtn{ color: var(--text-dark); }
+html.theme-light #mySidebar .closebtn{ color: var(--text-light); }
+
+/* Map input panel theme */
+.input-panel{ transition: background 200ms ease, color 200ms ease; }
+html.theme-light .input-panel{ background: rgba(255,255,255,0.95); color: var(--text-light); }
+html.theme-dark .input-panel{ background: rgba(0,0,0,0.6); color: var(--text-dark); border: 1px solid rgba(255,255,255,0.06); }
+
+/* availableMeteors specific overrides to ensure readability in dark mode */
+html.theme-dark .controls, html.theme-dark .controls * { color: var(--text-dark); }
+html.theme-dark .file span { background: rgba(255,255,255,0.03); color: var(--text-dark); border: 1px solid rgba(255,255,255,0.06); }
+html.theme-dark .asteroid-list li { background: rgba(255,255,255,0.02); color: var(--text-dark); }
+html.theme-dark .asteroid-list li .meta { color: var(--text-dark); }
+html.theme-dark .asteroid-list li .small { color: rgba(255,255,255,0.6); }
+html.theme-dark #asteroidTable tbody td, html.theme-dark #asteroidTable thead th { color: var(--text-dark); background: transparent; border-color: rgba(255,255,255,0.04); }
+
+html.theme-light .file span { background: #f6f6f6; color: var(--text-light); border: 1px solid rgba(0,0,0,0.06); }
+
+/* Rank text and small badges */
+html.theme-dark .badge, html.theme-dark .small { background: rgba(255,255,255,0.02); color: var(--text-dark); }
+html.theme-light .badge, html.theme-light .small { background: #e8f0fe; color: var(--text-light); }
+
+/* Improve primary button contrast on light backgrounds */
+html.theme-light button.primary{ box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+html.theme-dark button.primary{ box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+/* Map & page helpers: kept here so templates do not need inline header/map tweaks */
+.site-header{ padding-left: 1rem; padding-right: 1rem; }
+html.theme-light .site-header{ background: var(--header-light); }
+html.theme-dark .site-header{ background: var(--header-dark); }
+
+/* Constrain header content to the same max width as main content */
+.site-inner{ max-width: 1100px; margin: 0 auto; display:flex; align-items:center; justify-content:space-between; padding: 0 1rem; width:100%; }
+
+/* Ensure the map sits below the header and fills the remaining viewport */
+body{ padding-top: calc(var(--header-height) + 0.5rem); }
+#map{ height: calc(100vh - var(--header-height)) !important; width:100%; }
+
+/* Floating & leaflet control theme helpers */
+.input-panel{ position:absolute; top: calc(10px + var(--header-height)); left: 10px; z-index:1000; min-width:220px; }
+.floating-zoom-control{ z-index:1200; }
+
+/* Ensure templates include site_common.js for shared behaviour */
+/* Add in templates: <script src="{{ url_for('static', filename='site_common.js') }}"></script> */

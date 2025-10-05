@@ -3,96 +3,17 @@
 <head>
     <title>Meteor Visualization</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <style>
-        /* Body styling */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: black;
-            color: white;
-            margin: 0;
-            padding: 0;
-            /* Prevent accidental horizontal scrollbar caused by the hidden sidebar */
-            overflow-x: hidden;
-        }
-
-        h1 {
-            padding: 20px;
-        }
-
-        /* Open Sidebar Button */
-        #openBtn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            font-size: 20px;
-            cursor: pointer;
-            z-index: 1001;
-            background-color: #ffffff;
-            color: black;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-        }
-
-        /* Sidebar styling */
-        #mySidebar {
-            height: 100%;
-            width: 0;
-            position: fixed;
-            top: 0;
-            right: 0;
-            background-color: #ffffff;
-            color: black;
-            overflow: hidden;
-            transition: width 0.35s ease, padding 0.35s ease;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between; /* pushes button to bottom */
-            /* keep padding out of the closed state so the background doesn't show as a strip */
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* Open state applies the padding and width for the visible sidebar */
-        #mySidebar.open {
-            width: 300px;
-            padding: 20px;
-        }
-
-        .sidebar-content {
-            overflow-y: auto; /* scroll if content is tall */
-        }
-
-        #mySidebar h2 {
-            margin-top: 0;
-        }
-
-        #mySidebar p {
-            margin: 10px 0;
-        }
-
-        #mySidebar .closebtn {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 25px;
-            cursor: pointer;
-        }
-
-        /* Visualize Impact Button */
-        #impactBtn {
-            padding: 10px 15px;
-            font-size: 16px;
-            background-color: black;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}" />
 </head>
 <body>
-    <h1>Meteor Visualization</h1>
+    <header class="site-header">
+        <h1 class="site-title"><a href="/">Meteor Madness</a></h1>
+        <div class="site-controls">
+            <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
+        </div>
+    </header>
+
+    <h1 style="margin-left:1rem;">Meteor Visualisation</h1>
 
     <!-- Open Sidebar Button -->
     <button id="openBtn" onclick="openSidebar()">Asteroid Info</button>
@@ -115,32 +36,10 @@
     </div>
 
     <!-- Plotly graph -->
-    {{ graph_html|safe }}
+        <div id="plotly-container" class="plotly-theme-container">
+            {{ graph_html|safe }}
+        </div>
 
-    <script>
-        const openBtn = document.getElementById("openBtn");
-        const sidebar = document.getElementById("mySidebar");
-
-        function openSidebar() {
-            sidebar.classList.add('open');
-            // hide the button after the sidebar finishes opening to avoid a visible jump
-            sidebar.addEventListener('transitionend', function onEnd(e) {
-                if (e.propertyName === 'width') {
-                    openBtn.style.display = 'none';
-                    sidebar.removeEventListener('transitionend', onEnd);
-                }
-            });
-        }
-
-        function closeSidebar() {
-            // show button immediately so user can re-open while it closes
-            openBtn.style.display = 'block';
-            sidebar.classList.remove('open');
-        }
-
-        function visualizeImpact() {
-            alert("Visualizing impact..."); // placeholder for your impact function
-        }
-    </script>
+    <script src="{{ url_for('static', filename='site_common.js') }}"></script>
 </body>
 </html>
