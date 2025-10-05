@@ -198,7 +198,7 @@
           '</div>' +
           '<div class="meta"><strong>Approach date:</strong> ' + esc(date) +
           (r.jpl_url ? ' | <a href="' + esc(r.jpl_url) + '" target="_blank" rel="noopener">JPL</a>' : '') +
-          (r.id ? ' | <a href="/meteors/visualize/' + esc(r.id) + '">Visualize</a>' : '') +
+          (r.id ? ' | <a href="/meteors/visualize/' + esc(r.id) + '">Visualise</a>' : '') +
           '</div>';
 
         listEl.appendChild(li);
@@ -229,7 +229,7 @@
           '<td>' + (velKps != null ? velKps.toFixed(2) : '—') + '</td>' +
           '<td>' + esc(date) + '</td>' +
           '<td>' + (r.jpl_url ? '<a href="' + esc(r.jpl_url) + '" target="_blank" rel="noopener">Link</a>' : '—') +
-          (r.id ? ' | <a href="/meteors/visualize/' + esc(r.id) + '">Visualize</a>' : '') + '</td>';
+          (r.id ? ' | <a href="/meteors/visualize/' + esc(r.id) + '">Visualise</a>' : '') + '</td>';
         tableBody.appendChild(tr);
       }
     }

@@ -63,7 +63,7 @@ def visualize_asteroid(asteroid_id: str):
         "risk": "N/A"
     }
 
-    graph_html = "<p>Visualization not available.</p>"
+    graph_html = "<p>Visualisation not available.</p>"
 
     try:
         # Try to fetch asteroid from NASA NeoWs API
@@ -75,7 +75,7 @@ def visualize_asteroid(asteroid_id: str):
         except TypeError:
             graph_html = meteor_viz.simulate_sun_earth_asteroid()
         except Exception as e:
-            graph_html = f"<p>Error generating visualization: {e}</p>"
+            graph_html = f"<p>Error generating visualisation: {e}</p>"
 
         # Extract close approach data safely
         close_approach = obj.get("close_approach_data", [])
