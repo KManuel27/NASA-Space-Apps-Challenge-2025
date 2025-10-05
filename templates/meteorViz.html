@@ -76,6 +76,10 @@
             width:320px; background:var(--panel-bg-dark); padding:16px; border-radius:10px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.5);
         }
+        /* Push the sidebar down on wide screens so it doesn't overlap plot controls */
+        @media (min-width: 1000px) {
+            .viz-panel { margin-top: 120px; }
+        }
         .viz-panel h2 { margin-top:0; }
         .viz-panel p { margin:8px 0; }
 
@@ -85,6 +89,20 @@
         @media (max-width: 880px) {
             .viz-wrap { flex-direction:column-reverse; }
             .viz-panel { width:100%; }
+        }
+        /* Position Plotly's updatemenu near the slider and style the buttons */
+        .js-plotly-plot .updatemenu {
+            right: 24px !important;
+            top: auto !important;
+            bottom: 80px !important; /* sits above the slider */
+        }
+        .js-plotly-plot .updatemenu .button {
+            background: rgba(255,255,255,0.06) !important;
+            color: inherit !important;
+            border-radius: 8px !important;
+            padding: 6px 10px !important;
+            border: 0 !important;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.45) !important;
         }
     </style>
 </head>
@@ -116,8 +134,12 @@
                 <p><strong>Risk:</strong> {{ asteroid_info.risk }}</p>
 
                 <div style="margin-top:12px; display:flex; gap:8px;">
-                    <button class="btn" onclick="location.href='/'">Back</button>
-                    <button class="btn" id="impactBtn" onclick="location.href='/map'">Visualize Impact</button>
+                    {% set aid = asteroid_info._raw.id if asteroid_info and asteroid_info._raw and asteroid_info._raw.id is defined else '' %}
+                    {% if aid %}
+                    <a class="btn" href="/map/{{ aid }}">Visualize Impact</a>
+                    {% else %}
+                    <a class="btn" href="/map">Visualize Impact</a>
+                    {% endif %}
                 </div>
             </aside>
         </div>
@@ -186,6 +208,56 @@
 
                     // Resize Plotly plots and sync colours after initial load
                     setTimeout(function(){ try{ syncPlotlyTheme(); var charts = document.querySelectorAll('[id^="orbit_plot_"]'); charts.forEach(function(c){ if(c) try{ Plotly.Plots.resize(c); }catch(e){} }); }catch(e){} }, 250);
+
+                    // Sidebar Play/Pause: trigger Plotly's built-in play/pause controls
+                    function triggerPlotlyBuiltin(btnText) {
+                        const plot = document.querySelector('.js-plotly-plot');
+                        if(!plot) return false;
+                        // find updatemenu buttons and match by label text
+                        const ums = plot.querySelectorAll('.updatemenu');
+                        for(const um of ums){
+                            const buttons = um.querySelectorAll('.button');
+                            for(const b of buttons){
+                                if((b.textContent || b.innerText || '').trim().toLowerCase() === btnText.toLowerCase()){
+                                    b.click();
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    }
+
+                    document.getElementById('plotPlay').addEventListener('click', function(){
+                        if(!triggerPlotlyBuiltin('Play')){
+                            // Fallback: call Plotly.animate on first plot
+                            const plot = document.querySelector('.js-plotly-plot');
+                            if(plot && typeof Plotly !== 'undefined'){
+                                Plotly.animate(plot, null, {frame:{duration:80, redraw:true}, fromcurrent: true});
+                            }
+                        }
+                    });
+                    document.getElementById('plotPause').addEventListener('click', function(){
+                        if(!triggerPlotlyBuiltin('Pause')){
+                            // Fallback: try to stop animation by calling Plotly.animate with empty frames
+                            const plot = document.querySelector('.js-plotly-plot');
+                            if(plot && typeof Plotly !== 'undefined'){
+                                try{ Plotly.animate(plot, [], {frame:{duration:0, redraw:false}}); }catch(e){}
+                            }
+                        }
+                    });
+
+                    // Wire the impact button to navigate to /map/<id> when asteroid_id is available
+                    (function(){
+                        const impactBtn = document.getElementById('impactBtn');
+                        if(!impactBtn) return;
+                        // asteroid_id is injected by the Flask route if available
+                        const aid = '{{ asteroid_info._raw.id if asteroid_info and asteroid_info._raw and asteroid_info._raw.id is defined else "" }}';
+                        if(aid){
+                            impactBtn.addEventListener('click', function(){ location.href = '/map/' + aid; });
+                        } else {
+                            impactBtn.addEventListener('click', function(){ location.href = '/map'; });
+                        }
+                    })();
                 });
             })();
         </script>

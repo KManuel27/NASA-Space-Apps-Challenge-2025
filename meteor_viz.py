@@ -106,6 +106,29 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
         for t in time_seconds
     ])
 
+    # Simple planetary semi-major axes (AU) and colours - relative distances
+    # We'll compute circular-ish orbits (e=0) in the ecliptic for visual context
+    planets_info = [
+        ("Mercury", 0.387 * AU, "lightgray"),
+        ("Venus", 0.723 * AU, "goldenrod"),
+        ("Mars", 1.524 * AU, "orangered"),
+        ("Jupiter", 5.203 * AU, "sandybrown"),
+    ]
+
+    planet_sets = []
+    for idx, (pname, a_p, pcolor) in enumerate(planets_info):
+        # circular orbit approximation for visualisation
+        T_p = 2 * np.pi * np.sqrt((a_p ** 3) / mu_sun)
+        # offset the mean anomaly slightly per planet so markers start at different positions
+        M0_p = np.radians(360.0 * (idx / max(1, len(planets_info))))
+        # animation positions sampled on the main time grid
+        pos_p_anim = np.array([position_from_elements(a_p, 0.0, 0.0, T_p, t, M0_p) for t in time_seconds])
+        # full-orbit line sampled densely over one orbital period so the orbit shows completely
+        orbit_samples = max(360, samples)
+        t_full = np.linspace(0, T_p, orbit_samples)
+        pos_p_full = np.array([position_from_elements(a_p, 0.0, 0.0, T_p, t, M0_p) for t in t_full])
+        planet_sets.append((pos_p_anim, pos_p_full, pcolor, pname))
+
     # Parse a single asteroid from neo if provided, otherwise a small demo
     asteroid_sets = []
     if neo and isinstance(neo, dict):
@@ -142,35 +165,40 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
         a = 1.3 * AU
         e = 0.35
         i = np.radians(12.0)
-        omega = np.radians(75.0)
-        Omega = np.radians(15.0)
         T_ast = 2 * np.pi * np.sqrt((a**3) / mu_sun)
-        M0 = 0.0
-
-    pos = np.array([
+    pos_anim = np.array([
         position_from_elements(a, e, i, T_ast, t, M0, omega, Omega)
         for t in time_seconds
     ])
-    asteroid_sets.append((pos, color, label))
+    # sample full asteroid orbit densely so the complete orbit line is visible
+    orbit_samples_ast = max(360, samples)
+    t_full_ast = np.linspace(0, T_ast, orbit_samples_ast)
+    pos_full = np.array([
+        position_from_elements(a, e, i, T_ast, t, M0, omega, Omega) for t in t_full_ast
+    ])
+    asteroid_sets.append((pos_anim, pos_full, color, label))
 
     # Create plotly figure (single scene, interactive) with animation frames and a slider
-    axis_range = 2.5 * AU
+    # axis range (extend to include Jupiter)
+    axis_range = 6.0 * AU
     hidden_axis = dict(
         range=[-axis_range, axis_range], showbackground=False, showgrid=False,
-        showticklabels=False, zeroline=False, color='white'
+        showticklabels=False, zeroline=False, color='white', title={'text': ''}
     )
 
     fig = go.Figure()
 
     # Static traces: Sun marker, Earth full orbit, Asteroid full orbit
+    # Sun (legend enabled)
     fig.add_trace(go.Scatter3d(x=[0], y=[0], z=[0], mode='markers',
-                               marker=dict(size=18, color='yellow'), name='Sun', showlegend=False))
+                               marker=dict(size=18, color='yellow'), name='Sun', showlegend=True))
 
+    # Earth full orbit (legend enabled)
     fig.add_trace(go.Scatter3d(x=earth_positions[:, 0], y=earth_positions[:, 1], z=earth_positions[:, 2],
                                mode='lines', line=dict(color='royalblue', width=2),
-                               name='Earth Orbit', showlegend=False))
+                               name='Earth Orbit', showlegend=True))
 
-    # Earth marker (moving)
+    # Earth marker (moving) - do not duplicate legend entry
     fig.add_trace(go.Scatter3d(x=[earth_positions[0, 0]], y=[earth_positions[0, 1]], z=[earth_positions[0, 2]],
                                mode='markers', marker=dict(size=6, color='blue'), name='Earth', showlegend=False))
 
@@ -178,13 +206,26 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
     fig.add_trace(go.Scatter3d(x=[], y=[], z=[], mode='lines', line=dict(color='royalblue', width=2),
                                name='Earth Trail', showlegend=False))
 
+    # Planet orbits and markers (Mercury..Jupiter)
+    for (pos_p_anim, pos_p_full, pcolor, pname) in planet_sets:
+        # full orbit line (legend entry)
+        fig.add_trace(go.Scatter3d(x=pos_p_full[:, 0], y=pos_p_full[:, 1], z=pos_p_full[:, 2], mode='lines',
+                                   line=dict(color=pcolor, width=1), name=f'{pname} Orbit', showlegend=True))
+        # planet marker (moving)
+        fig.add_trace(go.Scatter3d(x=[pos_p_anim[0, 0]], y=[pos_p_anim[0, 1]], z=[pos_p_anim[0, 2]], mode='markers',
+                                   marker=dict(size=4, color=pcolor), name=pname, showlegend=False))
+        # trail for planet
+        fig.add_trace(go.Scatter3d(x=[], y=[], z=[], mode='lines', line=dict(color=pcolor, width=1),
+                                   name=f'{pname} Trail', showlegend=False))
+
     # Asteroid full orbit
-    for (pos, color, label) in asteroid_sets:
-        fig.add_trace(go.Scatter3d(x=pos[:, 0], y=pos[:, 1], z=pos[:, 2], mode='lines',
-                                   line=dict(color=color, width=2), name=f'{label} Orbit', showlegend=False))
+    for (pos_anim, pos_full, color, label) in asteroid_sets:
+        # full asteroid orbit (legend entry)
+        fig.add_trace(go.Scatter3d(x=pos_full[:, 0], y=pos_full[:, 1], z=pos_full[:, 2], mode='lines',
+                                   line=dict(color=color, width=2), name=f'{label} Orbit', showlegend=True))
 
         # Asteroid marker (moving)
-        fig.add_trace(go.Scatter3d(x=[pos[0, 0]], y=[pos[0, 1]], z=[pos[0, 2]], mode='markers',
+        fig.add_trace(go.Scatter3d(x=[pos_anim[0, 0]], y=[pos_anim[0, 1]], z=[pos_anim[0, 2]], mode='markers',
                                    marker=dict(size=5, color=color), name=label, showlegend=False))
 
         # Asteroid trail (updated per frame)
@@ -210,18 +251,30 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
         frame_traces.append(dict(type='scatter3d', x=earth_positions[:k+1, 0].tolist(),
                                  y=earth_positions[:k+1, 1].tolist(), z=earth_positions[:k+1, 2].tolist()))
 
+        # Planet orbits and markers (static orbit, moving marker, trail)
+        for (pos_p_anim, pos_p_full, pcolor, pname) in planet_sets:
+            # full orbit (static)
+            frame_traces.append(dict(type='scatter3d', x=pos_p_full[:, 0].tolist(),
+                                     y=pos_p_full[:, 1].tolist(), z=pos_p_full[:, 2].tolist()))
+            # planet marker (moving)
+            px, py, pz = pos_p_anim[k]
+            frame_traces.append(dict(type='scatter3d', x=[px], y=[py], z=[pz]))
+            # planet trail
+            frame_traces.append(dict(type='scatter3d', x=pos_p_anim[:k+1, 0].tolist(),
+                                     y=pos_p_anim[:k+1, 1].tolist(), z=pos_p_anim[:k+1, 2].tolist()))
+
         # Asteroid full orbit (static)
-        for (pos, color, label) in asteroid_sets:
-            frame_traces.append(dict(type='scatter3d', x=pos[:, 0].tolist(),
-                                     y=pos[:, 1].tolist(), z=pos[:, 2].tolist()))
+        for (pos_anim, pos_full, color, label) in asteroid_sets:
+            frame_traces.append(dict(type='scatter3d', x=pos_full[:, 0].tolist(),
+                                     y=pos_full[:, 1].tolist(), z=pos_full[:, 2].tolist()))
 
             # Asteroid marker
-            ax, ay, az = pos[k]
+            ax, ay, az = pos_anim[k]
             frame_traces.append(dict(type='scatter3d', x=[ax], y=[ay], z=[az]))
 
             # Asteroid trail
-            frame_traces.append(dict(type='scatter3d', x=pos[:k+1, 0].tolist(),
-                                     y=pos[:k+1, 1].tolist(), z=pos[:k+1, 2].tolist()))
+            frame_traces.append(dict(type='scatter3d', x=pos_anim[:k+1, 0].tolist(),
+                                     y=pos_anim[:k+1, 1].tolist(), z=pos_anim[:k+1, 2].tolist()))
 
         frames.append(go.Frame(data=frame_traces, name=str(k)))
 
@@ -241,18 +294,42 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
         scene=dict(
             xaxis=hidden_axis, yaxis=hidden_axis, zaxis=hidden_axis,
             aspectmode='manual', aspectratio=dict(x=1, y=1, z=0.4),
-            camera=dict(eye=dict(x=1.6, y=1.6, z=0.9))
+            # pull the camera back so outer planets (Jupiter) are visible
+            camera=dict(eye=dict(x=3.6, y=3.6, z=1.4))
         ),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=30, b=0), height=720,
-        title=f"Sun – Earth – {label}", showlegend=False,
-        updatemenus=[dict(type='buttons', showactive=False, y=1.05, x=1.18,
-                          buttons=[dict(label='Play', method='animate',
-                                        args=[None, {"frame": {"duration": 80, "redraw": True},
-                                                     "fromcurrent": True, "transition": {"duration": 0}}]),
-                                   dict(label='Pause', method='animate',
-                                        args=[[None], {"frame": {"duration": 0, "redraw": False},
-                                                       "mode": "immediate", "transition": {"duration": 0}}])])],
+        # add right margin to leave room for the info sidebar
+        margin=dict(l=0, r=380, t=30, b=0), height=720,
+        title=f"Sun – Earth – {label}", showlegend=True,
+        # legend acts as the key for traces (orbits and Sun)
+        legend=dict(
+            orientation='v',
+            x=0.02, y=0.98,
+            xanchor='left', yanchor='top',
+            bgcolor='rgba(0,0,0,0)',
+            bordercolor='rgba(0,0,0,0.2)'
+        ),
+        updatemenus=[
+            dict(
+                type='buttons',
+                showactive=False,
+                x=0.02, y=0.02,
+                xanchor='left', yanchor='bottom',
+                pad=dict(t=8, r=8, b=8, l=8),
+                buttons=[
+                    dict(
+                        label='Play', method='animate',
+                        args=[None, {"frame": {"duration": 80, "redraw": True},
+                                     "fromcurrent": True, "transition": {"duration": 0}}]
+                    ),
+                    dict(
+                        label='Pause', method='animate',
+                        args=[[None], {"frame": {"duration": 0, "redraw": False},
+                                       "mode": "immediate", "transition": {"duration": 0}}]
+                    )
+                ]
+            )
+        ],
         sliders=[dict(steps=slider_steps, active=0, x=0.1, y=-0.05, len=0.8,
                       currentvalue=dict(prefix='Current Date: ', visible=True), pad=dict(b=20, t=40))]
     )
