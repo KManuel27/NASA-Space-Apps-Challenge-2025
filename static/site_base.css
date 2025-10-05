@@ -23,8 +23,8 @@ html.theme-dark body {
 /* set consistent site font */
 body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
 
-/* Header */
-.site-header{
+/* --- Header layout with left-aligned tabs --- */
+.site-header {
   position: fixed;
   top: 0;
   left: 0;
@@ -33,11 +33,54 @@ body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-se
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1rem;
+  padding: 0 2rem; /* a bit more padding for breathing room */
+  gap: 1rem;
   z-index: 1200;
   backdrop-filter: blur(6px);
   box-shadow: 0 1px 6px rgba(0,0,0,0.08);
 }
+
+/* Tabs: aligned left, spaced apart */
+.site-header .tabs {
+  display: flex;
+  justify-content: flex-start; /* 👈 aligns tabs to the left */
+  gap: 5rem; /* 👈 controls spacing between each tab */
+  flex: 1;
+}
+
+/* Tab buttons */
+.site-header [role="tab"] {
+  border: none;
+  background: transparent;
+  padding: 0.8rem 3rem;
+  min-width: 120px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+/* Highlight active tab */
+.site-header [role="tab"][aria-selected="true"] {
+  background: var(--accent);
+  color: white;
+}
+
+/* Hover effect (optional but nice) */
+.site-header [role="tab"]:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Keep the theme toggle pinned to the far right */
+.site-controls {
+  flex-shrink: 0;
+}
+
+/* Adjust body padding so content starts below header */
+body {
+  padding-top: calc(var(--header-height) + 0.5rem);
+}
+
 html.theme-light .site-header{ background: var(--header-light); color: var(--text-light); }
 html.theme-dark .site-header{ background: var(--header-dark); color: var(--text-dark); }
 
@@ -45,9 +88,12 @@ html.theme-dark .site-header{ background: var(--header-dark); color: var(--text-
 .site-title a{ color: inherit; text-decoration: none; }
 
 .site-controls{ display:flex; gap:0.5rem; align-items:center; }
-.site-controls button{ padding:6px 10px; border-radius:6px; border-width:1px; border-style:solid; background:transparent; cursor:pointer; }
+.site-controls button{ padding:0.8rem 1.6rem; border-radius:6px; border-width:1px; border-style:solid; background:transparent; cursor:pointer; }
 html.theme-light .site-controls button{ border-color: rgba(0,0,0,0.12); color: var(--text-light); }
-html.theme-dark .site-controls button{ border-color: rgba(255,255,255,0.12); color: var(--text-dark); background: rgba(255,255,255,0.02); }
+html.theme-dark .site-controls button{ 
+  border: 1px solid rgba(255,255,255,0.6); 
+  color: var(--text-dark); 
+  background: rgba(255,255,255,0.08); }
 
 /* Push page content below the header */
 body{ padding-top: calc(var(--header-height) + 0.5rem); transition: background 200ms ease, color 200ms ease; }
@@ -74,6 +120,43 @@ html.theme-light button.primary{ border: 1px solid rgba(0,0,0,0.12) !important; 
 html.theme-dark button.primary{ border: 1px solid rgba(255,255,255,0.06) !important; }
 button.primary:hover{ transform: translateY(-1px); filter:brightness(1.03); }
 button.primary:focus{ outline: 3px solid rgba(14,165,255,0.18); }
+
+/* Make page layout stretch properly */
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--header-height));
+}
+
+/* Let main fill all available space (above footer) */
+.full-height {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make the home tab also flex vertically */
+.home-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Push the button to the bottom */
+.start-button-wrapper {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+/* Make it bigger */
+.start-button-wrapper button.primary {
+  font-size: 1.4rem;
+  padding: 1.1rem 2.5rem;
+  border-radius: 14px;
+  min-width: 200px;
+}
 
 /* Ensure forms and inputs are readable in both themes */
 input, select, textarea { color: inherit; background: transparent; border: 1px solid rgba(0,0,0,0.08); padding: 0.3rem 0.5rem; border-radius:6px; }

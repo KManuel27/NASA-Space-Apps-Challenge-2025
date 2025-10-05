@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="theme-dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,14 +8,9 @@
 </head>
 <body>
     <header class="site-header">
-        <h1 class="site-title"><a href="/">Meteor Madness</a></h1>
-        <div class="site-controls">
-            <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
-        </div>
-    </header>
+        <!-- Hidden title for accessibility (won’t show visually) -->
+        <h1 class="site-title sr-only">Meteor Madness</h1>
 
-    <div class="page-wrapper">
-    <main class="main-content">
         <nav class="tabs" role="tablist">
             <button role="tab" aria-selected="true" data-tab="home">Home</button>
             <button role="tab" aria-selected="false" data-tab="about">About</button>
@@ -23,33 +18,45 @@
             <button role="tab" aria-selected="false" data-tab="discussions">Discussions</button>
         </nav>
 
-        <section id="tab-home" class="tab-panel">
-            <h2>Home</h2>
-            <p>Placeholder</p>
-            <p>
-                    <button class="primary" onclick="window.location.href='/available_meteors'">Begin</button>
-            </p>
-        </section>
+        <div class="site-controls">
+            <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
+        </div>
+    </header>
 
-        <section id="tab-about" class="tab-panel hidden">
-            <h2>About</h2>
-            <p>Placeholder</p>
-        </section>
+    <div class="page-wrapper">
+        <main class="main-content full-height">
 
-        <section id="tab-references" class="tab-panel hidden">
-            <h2>References</h2>
-            <p>Placeholder</p>
-        </section>
+            <section id="tab-home" class="tab-panel home-tab">
+                <h2>Home</h2>
+                <p>Placeholder</p>
 
-        <section id="tab-discussions" class="tab-panel hidden">
-            <h2>Discussions</h2>
-            <p>Placeholder</p>
-        </section>
-    </main>
+                <div class="start-button-wrapper">
+                    <button class="primary" onclick="window.location.href='/available_meteors'">
+                        Begin
+                    </button>
+                </div>
+            </section>
+
+            <section id="tab-about" class="tab-panel hidden">
+                <h2>About</h2>
+                <p>Placeholder</p>
+            </section>
+
+            <section id="tab-references" class="tab-panel hidden">
+                <h2>References</h2>
+                <p>Placeholder</p>
+            </section>
+
+            <section id="tab-discussions" class="tab-panel hidden">
+                <h2>Discussions</h2>
+                <p>Placeholder</p>
+            </section>
+        </main>
+
     <footer class="site-footer">
         <div>Credits: NASA Space Apps Challenge demo — Placeholder</div>
     </footer>
-    </div>
+</div>
 
         <script src="{{ url_for('static', filename='site_common.js') }}"></script>
 </body>
