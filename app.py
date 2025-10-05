@@ -3,14 +3,42 @@ import meteor_viz
 import neoWs
 from datetime import date, timedelta
 from energy_impact import energy_impact_estimation
+from collections import OrderedDict
 
 app = Flask(__name__)
 
+# Simple in-memory LRU cache for generated visualisations to avoid
+# recomputing the Plotly fragment on repeated views. Small size to
+# bound memory usage; keys are asteroid IDs, values are HTML fragments.
+_VIS_CACHE = OrderedDict()
+_VIS_CACHE_MAX = 8
 
-# --------------- Page 1: Static Start Page --------------
+
+def _get_cached_vis(asteroid_id, generator_fn):
+    """Return cached visualization for asteroid_id or generate and cache it.
+    generator_fn is a callable that produces the HTML fragment when needed.
+    """
+    if not asteroid_id:
+        return generator_fn()
+    # Hit
+    if asteroid_id in _VIS_CACHE:
+        # move to end to mark as recently used
+        _VIS_CACHE.move_to_end(asteroid_id)
+        return _VIS_CACHE[asteroid_id]
+    # Miss: generate
+    html = generator_fn()
+    _VIS_CACHE[asteroid_id] = html
+    # Evict oldest if over capacity
+    if len(_VIS_CACHE) > _VIS_CACHE_MAX:
+        _VIS_CACHE.popitem(last=False)
+    return html
+    return html
+
+
 @app.route("/")
 def start_page():
     return render_template("startPage.html")  # No Python computation yet
+ 
 
 @app.route("/available_meteors")
 def available_meteors():
@@ -51,6 +79,7 @@ def available_meteors():
         error=error,
     )
 
+
 @app.route("/meteors/visualize/<asteroid_id>")
 def visualize_asteroid(asteroid_id: str):
     # Default asteroid info (prevents Jinja error)
@@ -70,11 +99,14 @@ def visualize_asteroid(asteroid_id: str):
         # Try to fetch asteroid from NASA NeoWs API
         obj = neoWs.lookup_asteroid(asteroid_id)
 
-        # Safely generate graph
+        # Safely generate graph and cache the result to speed up repeated views
         try:
-            graph_html = meteor_viz.simulate_sun_earth_asteroid(obj)
-        except TypeError:
-            graph_html = meteor_viz.simulate_sun_earth_asteroid()
+            def gen():
+                try:
+                    return meteor_viz.simulate_sun_earth_asteroid(obj)
+                except TypeError:
+                    return meteor_viz.simulate_sun_earth_asteroid()
+            graph_html = _get_cached_vis(asteroid_id, gen)
         except Exception as e:
             graph_html = f"<p>Error generating visualisation: {e}</p>"
 

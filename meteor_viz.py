@@ -15,8 +15,6 @@ Goals:
 """
 
 import numpy as np
-import plotly.graph_objs as go
-import plotly.io as pio
 from datetime import datetime, timedelta
 
 # ====================================
@@ -86,7 +84,7 @@ def position_from_elements(a, e, i, T, t_seconds, M0=0.0, omega=0.0, Omega=0.0):
 
 
 # The visualiser is provided as a function so it can be called from Flask routes.
-def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
+def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=90):
     """
     Generate an embeddable Plotly HTML fragment showing the Sun, Earth's orbit and
     a single asteroid orbit (from `neo` orbital_data) or a simple demo if `neo` is None.
@@ -98,6 +96,16 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
     # time grid
     time_days = np.linspace(0, days, samples)
     time_seconds = time_days * DT
+
+    # Lazy-import plotly so the module can be imported even if plotly is not installed.
+    try:
+        import plotly.graph_objs as go
+        import plotly.io as pio
+        _have_plotly = True
+    except Exception:
+        go = None
+        pio = None
+        _have_plotly = False
 
     # Earth positions
     M0_earth = 0.0
@@ -179,6 +187,60 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
     ])
     asteroid_sets.append((pos_anim, pos_full, color, label))
 
+    # If Plotly is not available, return a small static SVG fragment as a fast fallback.
+    if not _have_plotly:
+        try:
+            # build a simple 2D projection (x,y) SVG
+            w, h = 700, 420
+            # compute a view radius from available samples
+            try:
+                max_planet_radius = max(
+                    np.max(np.linalg.norm(ps_full, axis=1))
+                    for (_pa, ps_full, _pc, _pn) in planet_sets
+                )
+            except Exception:
+                max_planet_radius = 3.0 * AU
+            try:
+                asteroid_radii = [
+                    np.max(np.linalg.norm(ast_full, axis=1))
+                    for (ast_anim, ast_full, _ac, _al) in asteroid_sets
+                ]
+                max_asteroid_radius = max(asteroid_radii) if asteroid_radii else 0.0
+            except Exception:
+                max_asteroid_radius = 0.0
+            try:
+                earth_radius = (
+                    float(np.max(np.linalg.norm(earth_positions, axis=1)))
+                    if earth_positions.size else 1.0 * AU
+                )
+            except Exception:
+                earth_radius = 1.0 * AU
+            view_r = float(max(max_planet_radius, max_asteroid_radius, earth_radius, 3.0 * AU) * 1.08)
+
+            def to_px(x, y):
+                sx = (x / (view_r * 2) + 0.5) * w
+                sy = (1 - (y / (view_r * 2) + 0.5)) * h
+                return sx, sy
+
+            svg_parts = [f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
+                         'style="background:transparent">']
+            # sun
+            sx, sy = to_px(0, 0)
+            svg_parts.append(f'<circle cx="{sx:.1f}" cy="{sy:.1f}" r="8" fill="yellow" />')
+            # earth orbit
+            earth_pts = ['{:.1f},{:.1f}'.format(*to_px(x, y)) for (x, y, z) in earth_positions]
+            svg_parts.append(f'<polyline points="{" ".join(earth_pts)}" '
+                             'stroke="royalblue" fill="none" stroke-width="1" />')
+            # asteroid orbit (first one)
+            for (pos_anim, pos_full, color, label) in asteroid_sets:
+                ast_pts = ['{:.1f},{:.1f}'.format(*to_px(x, y)) for (x, y, z) in pos_full]
+                svg_parts.append(f'<polyline points="{" ".join(ast_pts)}" '
+                                 f'stroke="{color}" fill="none" stroke-width="1.5" />')
+            svg_parts.append('</svg>')
+            return '\n'.join(svg_parts)
+        except Exception:
+            return '<p>Visualisation not available (Plotly not installed).</p>'
+
     # Create plotly figure (single scene, interactive) with animation frames and a slider
     # Compute an axis range that fits the outermost orbit (planets or asteroid)
     # so the largest orbit (e.g., Jupiter) appears near the edge while keeping
@@ -212,18 +274,16 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
 
     # Background stars (placed first so they act as a subtle backdrop around planets)
     try:
-        stars_count = 400
+        # fewer stars -> less initial payload
+        stars_count = 120
         rng = np.random.default_rng(42)
-        # distribute stars across the full 3D scene volume so they don't appear
-        # as a flat band; use the same axis_range in x,y,z so stars fill the view
         xs = rng.uniform(-axis_range * 0.95, axis_range * 0.95, stars_count)
         ys = rng.uniform(-axis_range * 0.95, axis_range * 0.95, stars_count)
         zs = rng.uniform(-axis_range * 0.95, axis_range * 0.95, stars_count)
-        # single small size for simplicity (keeps render cheap)
         fig.add_trace(go.Scatter3d(
             x=xs, y=ys, z=zs,
             mode='markers',
-            marker=dict(size=1.8, color='white', opacity=0.9),
+            marker=dict(size=1.5, color='white', opacity=0.9),
             showlegend=False
         ))
     except Exception:
@@ -240,24 +300,30 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
                                name='Earth Orbit', showlegend=True))
 
     # Earth marker (moving) - do not duplicate legend entry
+    # We'll track dynamic trace indices so frames only update these traces.
+    dynamic_traces = []
     fig.add_trace(go.Scatter3d(x=[earth_positions[0, 0]], y=[earth_positions[0, 1]], z=[earth_positions[0, 2]],
                                mode='markers', marker=dict(size=6, color='blue'), name='Earth', showlegend=False))
+    dynamic_traces.append(len(fig.data) - 1)
 
     # Earth trail (will be updated in frames)
     fig.add_trace(go.Scatter3d(x=[], y=[], z=[], mode='lines', line=dict(color='royalblue', width=2),
                                name='Earth Trail', showlegend=False))
+    dynamic_traces.append(len(fig.data) - 1)
 
     # Planet orbits and markers (Mercury..Jupiter)
     for (pos_p_anim, pos_p_full, pcolor, pname) in planet_sets:
-        # full orbit line (legend entry)
+        # full orbit line (legend entry) - static
         fig.add_trace(go.Scatter3d(x=pos_p_full[:, 0], y=pos_p_full[:, 1], z=pos_p_full[:, 2], mode='lines',
                                    line=dict(color=pcolor, width=1), name=f'{pname} Orbit', showlegend=True))
         # planet marker (moving)
         fig.add_trace(go.Scatter3d(x=[pos_p_anim[0, 0]], y=[pos_p_anim[0, 1]], z=[pos_p_anim[0, 2]], mode='markers',
                                    marker=dict(size=4, color=pcolor), name=pname, showlegend=False))
+        dynamic_traces.append(len(fig.data) - 1)
         # trail for planet
         fig.add_trace(go.Scatter3d(x=[], y=[], z=[], mode='lines', line=dict(color=pcolor, width=1),
                                    name=f'{pname} Trail', showlegend=False))
+        dynamic_traces.append(len(fig.data) - 1)
 
     # (Background stars are added earlier as a backdrop; no additional stars here)
 
@@ -270,62 +336,43 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
         # Asteroid marker (moving)
         fig.add_trace(go.Scatter3d(x=[pos_anim[0, 0]], y=[pos_anim[0, 1]], z=[pos_anim[0, 2]], mode='markers',
                                    marker=dict(size=5, color=color), name=label, showlegend=False))
+        dynamic_traces.append(len(fig.data) - 1)
 
         # Asteroid trail (updated per frame)
         fig.add_trace(go.Scatter3d(x=[], y=[], z=[], mode='lines', line=dict(color=color, width=2),
                                    name=f'{label} Trail', showlegend=False))
+        dynamic_traces.append(len(fig.data) - 1)
 
     # Build frames
+    # Build frames but only update the dynamic traces to keep frame payload small.
     frames = []
-    for k in range(len(time_seconds)):
-        frame_traces = []
-        # include background stars in every frame so they remain visible
-        try:
-            frame_traces.append(dict(type='scatter3d', x=xs.tolist(), y=ys.tolist(), z=zs.tolist(),
-                                     mode='markers', marker=dict(size=1.5, color='white', opacity=0.85)))
-        except Exception:
-            pass
-        # Sun (static)
-        frame_traces.append(dict(type='scatter3d', x=[0], y=[0], z=[0]))
-
-        # Earth full orbit (static)
-        frame_traces.append(dict(type='scatter3d', x=earth_positions[:, 0].tolist(),
-                                 y=earth_positions[:, 1].tolist(), z=earth_positions[:, 2].tolist()))
-
+    n_steps = len(time_seconds)
+    for k in range(n_steps):
+        frame_data = []
         # Earth marker (moving)
         ex, ey, ez = earth_positions[k]
-        frame_traces.append(dict(type='scatter3d', x=[ex], y=[ey], z=[ez]))
+        frame_data.append(dict(type='scatter3d', x=[ex], y=[ey], z=[ez]))
 
         # Earth trail (up to k)
-        frame_traces.append(dict(type='scatter3d', x=earth_positions[:k+1, 0].tolist(),
-                                 y=earth_positions[:k+1, 1].tolist(), z=earth_positions[:k+1, 2].tolist()))
+        frame_data.append(dict(type='scatter3d', x=earth_positions[:k+1, 0].tolist(),
+                               y=earth_positions[:k+1, 1].tolist(), z=earth_positions[:k+1, 2].tolist()))
 
-        # Planet orbits and markers (static orbit, moving marker, trail)
+        # Planet markers and trails
         for (pos_p_anim, pos_p_full, pcolor, pname) in planet_sets:
-            # full orbit (static)
-            frame_traces.append(dict(type='scatter3d', x=pos_p_full[:, 0].tolist(),
-                                     y=pos_p_full[:, 1].tolist(), z=pos_p_full[:, 2].tolist()))
-            # planet marker (moving)
             px, py, pz = pos_p_anim[k]
-            frame_traces.append(dict(type='scatter3d', x=[px], y=[py], z=[pz]))
-            # planet trail
-            frame_traces.append(dict(type='scatter3d', x=pos_p_anim[:k+1, 0].tolist(),
-                                     y=pos_p_anim[:k+1, 1].tolist(), z=pos_p_anim[:k+1, 2].tolist()))
+            frame_data.append(dict(type='scatter3d', x=[px], y=[py], z=[pz]))
+            frame_data.append(dict(type='scatter3d', x=pos_p_anim[:k+1, 0].tolist(),
+                                   y=pos_p_anim[:k+1, 1].tolist(), z=pos_p_anim[:k+1, 2].tolist()))
 
-        # Asteroid full orbit (static)
+        # Asteroid marker and trail
         for (pos_anim, pos_full, color, label) in asteroid_sets:
-            frame_traces.append(dict(type='scatter3d', x=pos_full[:, 0].tolist(),
-                                     y=pos_full[:, 1].tolist(), z=pos_full[:, 2].tolist()))
-
-            # Asteroid marker
             ax, ay, az = pos_anim[k]
-            frame_traces.append(dict(type='scatter3d', x=[ax], y=[ay], z=[az]))
+            frame_data.append(dict(type='scatter3d', x=[ax], y=[ay], z=[az]))
+            frame_data.append(dict(type='scatter3d', x=pos_anim[:k+1, 0].tolist(),
+                                   y=pos_anim[:k+1, 1].tolist(), z=pos_anim[:k+1, 2].tolist()))
 
-            # Asteroid trail
-            frame_traces.append(dict(type='scatter3d', x=pos_anim[:k+1, 0].tolist(),
-                                     y=pos_anim[:k+1, 1].tolist(), z=pos_anim[:k+1, 2].tolist()))
-
-        frames.append(go.Frame(data=frame_traces, name=str(k)))
+        # Create frame updating only the dynamic traces (trace indices collected earlier)
+        frames.append(go.Frame(data=frame_data, name=str(k), traces=dynamic_traces))
 
     # Slider steps
     slider_steps = []
