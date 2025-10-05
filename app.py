@@ -263,6 +263,7 @@ def map_page(asteroid_id: str):
     initial_diameter_m = None
     initial_velocity_kms = None
     initial_density_kg_m3 = 3000
+    asteroid_info = None
     try:
         obj = neoWs.lookup_asteroid(asteroid_id)
         # estimated_diameter -> kilometers object may contain min/max
@@ -278,11 +279,23 @@ def map_page(asteroid_id: str):
         # relative velocity from first close approach entry
         try:
             cad = obj.get("close_approach_data", [])
-            if cad:
-                rel = cad[0].get("relative_velocity", {})
-                v_kps = rel.get("kilometers_per_second")
-                if v_kps is not None:
-                    initial_velocity_kms = float(v_kps)
+            close_data = cad[0] if cad else {}
+            rel = close_data.get("relative_velocity", {})
+            v_kps = rel.get("kilometers_per_second")
+            if v_kps is not None:
+                initial_velocity_kms = float(v_kps)
+
+            # Prepare a small asteroid info summary for the map template
+            asteroid_info = {
+                "id": asteroid_id,
+                "name": obj.get("name") or obj.get("designation") or asteroid_id,
+                "diameter_m": initial_diameter_m,
+                "velocity_kms": initial_velocity_kms,
+                "closest_approach_date": close_data.get("close_approach_date") if close_data else None,
+                "miss_distance_km": (close_data.get("miss_distance", {}).get("kilometers") if close_data else None),
+                "is_hazardous": bool(obj.get("is_potentially_hazardous_asteroid")),
+                "_raw": obj,
+            }
         except Exception:
             initial_velocity_kms = None
     except Exception:
@@ -295,6 +308,7 @@ def map_page(asteroid_id: str):
         initial_diameter_m=initial_diameter_m,
         initial_velocity_kms=initial_velocity_kms,
         initial_density_kg_m3=initial_density_kg_m3,
+        asteroid_info=asteroid_info,
     )  # TODO: pass data for initial rendering
 
 

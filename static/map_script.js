@@ -52,9 +52,30 @@ async function getPlaceInfo(lat, lon){
     if(!res.ok) return { name:'Unknown', placeType:'city', density:3000 };
     const js = await res.json();
     const name = js.name || js.display_name?.split(",")[0] || "Nearest place";
-    const type = (js.type || js.category || "city").toLowerCase();
-    const density = densityByPlaceType[type] ?? 3000;
-    return { name, placeType: type, density };
+      const type = (js.type || js.category || "city").toLowerCase();
+      // improved heuristic: combine OSM type with extratags.population when available
+      let density = densityByPlaceType[type] ?? 3000;
+      try{
+        const extratags = js.extratags || {};
+        // If place is water or sea, use near-zero density
+        const category = (js.category || '').toLowerCase();
+        if(category.includes('water') || category.includes('ocean') || type.includes('water') || type.includes('sea') || (js.class && String(js.class).toLowerCase().includes('water'))){
+          density = 1; // effectively no population
+          return { name, placeType: type, density };
+        }
+        if(extratags.population){
+          const pop = parseInt(String(extratags.population).replace(/[^0-9]/g, ''), 10) || 0;
+          if(pop > 0){
+            // coarse area guess per place type
+            const areaKm2 = (type === 'metropolis' || type === 'city') ? 200 : (type === 'town' ? 50 : (type === 'village' ? 5 : 1));
+            const est = Math.round(pop / areaKm2);
+            density = Math.max(10, Math.min(est, 30000));
+          }
+        }
+        if(['village','hamlet','isolated_dwelling'].includes(type)) density = Math.min(density, 800);
+        if(['city','metropolis'].includes(type)) density = Math.max(density, 1500);
+      }catch(e){}
+      return { name, placeType: type, density };
   } catch { return { name:'Unknown', placeType:'city', density:3000 }; }
 }
 
@@ -70,15 +91,20 @@ function drawRings(lat, lon, rings_m){
 }
 
 // Social sharing
-function buildShareURL(lat, lon, mt){
-  const base = window.location.href.split('?')[0];
-  const url = `${base}?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}&energy=${mt.toFixed(2)}`;
-  const text = `Asteroid impact at ${lat.toFixed(2)}, ${lon.toFixed(2)} with energy ${mt.toFixed(2)} Mt TNT!`;
+function buildShareURL(lat, lon, mt, opts){
+  opts = opts || {};
+  const baseNoQuery = window.location.href.split('?')[0];
+  let url;
+  if(opts.asteroidId) url = `${window.location.origin}/map/${encodeURIComponent(opts.asteroidId)}`;
+  else url = `${baseNoQuery}?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}&energy=${mt.toFixed(2)}`;
+  const namePart = opts.asteroidName ? `${opts.asteroidName} ` : '';
+  const text = `${namePart}Estimated impact ${mt.toFixed(2)} Mt TNT at ${lat.toFixed(2)},${lon.toFixed(2)}.`;
+  const hashtags = 'AsteroidImpact,CRASH,SpaceApps';
   return {
-    twitter:  `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+    twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=${encodeURIComponent(hashtags)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`,
     linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`,
-    whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(text + " " + url)}`
+    whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`
   };
 }
 
@@ -155,5 +181,22 @@ window.addEventListener('load', () => {
     map.setView([qlat, qlon], 9);
     map.fire('click', { latlng: L.latLng(qlat, qlon) });
   }
+
+  // Populate persistent asteroid info panel if server provided asteroid info
+  try{
+    const info = window.__ASTEROID_INFO__;
+    if(info){
+      const panel = document.getElementById('asteroidInfo');
+      document.getElementById('asteroidName').textContent = info.name || 'Asteroid';
+      document.getElementById('infoDiameter').textContent = info.diameter_m ? (Number(info.diameter_m).toLocaleString() + ' m') : '—';
+      document.getElementById('infoVelocity').textContent = info.velocity_kms ? (info.velocity_kms + ' km/s') : '—';
+      document.getElementById('infoClose').textContent = info.closest_approach_date || '—';
+      document.getElementById('infoMiss').textContent = info.miss_distance_km || '—';
+      document.getElementById('infoHazard').textContent = info.is_hazardous ? 'Yes' : 'No';
+      if(panel) panel.classList.remove('hidden');
+
+  // removed share buttons from info panel; sharing is still available via popup
+    }
+  }catch(e){}
 });
 

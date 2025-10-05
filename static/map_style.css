@@ -12,6 +12,10 @@
 .site-title { font-weight:700; color:inherit; text-decoration:none; font-size:1.05rem; }
 .site-subtitle { font-size:0.8rem; color:inherit; opacity:0.85; }
 
+/* On the map page we prefer the title and subtitle side-by-side */
+.site-header--inline-brand .site-brand { flex-direction:row; align-items:center; gap:10px; }
+.site-header--inline-brand .site-subtitle { font-size:0.95rem; opacity:0.9; }
+
 .site-controls { display:flex; align-items:center; gap:8px; }
 
 /* Theme toggle - keep visual parity with site_base buttons */
@@ -21,4 +25,25 @@ html.theme-dark .theme-toggle { border: 1px solid rgba(255,255,255,0.6); color: 
 
 /* Ensure the map sits below the header and fills the remaining viewport (site_base also defines #map but keep a fallback) */
 #map{ height: calc(100vh - var(--header-height)); width:100%; }
+
+/* Persistent asteroid info panel in bottom-left */
+.asteroid-info {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 1400;
+  min-width: 220px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.95);
+  color: var(--text-light);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+html.theme-dark .asteroid-info { background: rgba(6,6,8,0.9); color: var(--text-dark); border: 1px solid rgba(255,255,255,0.04); }
+.asteroid-info h3 { margin:0 0 .5rem 0; font-size:1rem; }
+.asteroid-info ul { list-style:none; padding:0; margin:0; font-size:0.95rem; }
+.asteroid-info li { margin:6px 0; }
+.asteroid-info .share-links { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
+.asteroid-info .share-links button { padding:6px 8px; border-radius:6px; border:0; cursor:pointer; background:var(--accent); color:white; font-size:0.86rem; }
+.asteroid-info.hidden{ display:none !important; }
 

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <header class="site-header">
+  <header class="site-header site-header--inline-brand">
     <button class="back-button" onclick="history.back()">← Back</button>
     <div class="site-brand">
       <a class="site-title" href="/">Meteor Madness</a>
@@ -37,6 +37,8 @@
       initial_velocity_kms: {{ initial_velocity_kms | tojson }},
       initial_density_kg_m3: {{ initial_density_kg_m3 | tojson }}
     };
+    // server-provided asteroid info summary (if any)
+    window.__ASTEROID_INFO__ = {{ asteroid_info | tojson }};
   </script>
 
   <!-- Leaflet script -->
@@ -45,6 +47,16 @@
   <script src="{{ url_for('static', filename='site_common.js') }}"></script>
   <!-- Your map logic -->
   <script src="{{ url_for('static', filename='map_script.js') }}"></script>
+  <aside id="asteroidInfo" class="asteroid-info hidden" aria-live="polite">
+    <h3 id="asteroidName">Asteroid</h3>
+    <ul>
+      <li><strong>Diameter:</strong> <span id="infoDiameter">—</span></li>
+      <li><strong>Velocity:</strong> <span id="infoVelocity">—</span></li>
+      <li><strong>Closest approach:</strong> <span id="infoClose">—</span></li>
+      <li><strong>Miss distance (km):</strong> <span id="infoMiss">—</span></li>
+      <li><strong>Hazard:</strong> <span id="infoHazard">—</span></li>
+    </ul>
+  </aside>
 </body>
 </html>
 
