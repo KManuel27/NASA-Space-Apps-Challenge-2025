@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Dynamic Asteroid Impact Demo (Auto Population)</title>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meteor Madness — Impact Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='map_style.css') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}" />
-  <style>
-    /* Page-local: ensure map sits below the fixed header like other pages (no white strip) */
-    body { padding-top: calc(var(--header-height) + 0.5rem) !important; }
-    #map { height: calc(100vh - var(--header-height)) !important; margin-top: 0 !important; top: 0; }
-  </style>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+
+  <!-- Your map styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='map_style.css') }}">
+  <!-- Optional site styles (enable later if you like) -->
+  {# <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}"> #}
 </head>
 <body>
   <header class="site-header">
@@ -28,18 +27,27 @@
     <label>Diameter (m): <input id="diam" type="number" value="140" min="1"></label>
     <label>Velocity (km/s): <input id="vel" type="number" value="19" min="1"></label>
     <label>Material density (kg/m³): <input id="dens" type="number" value="3000" min="100"></label>
-    <!-- removed save/clear default controls; zoom handled by floating control -->
-    <div class="muted" style="margin-top:.5rem">Population auto-detected by nearest place (OSM). Rates are typical defaults by place type.</div>
+    <div class="muted" style="margin-top:.5rem">
+      Population auto-detected by nearest place (OSM). Rates are typical defaults by place type.
+    </div>
   </div>
 
+  <!-- Leaflet script -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Your map logic -->
   <script src="{{ url_for('static', filename='map_script.js') }}"></script>
-  <script src="{{ url_for('static', filename='site_common.js') }}"></script>
+  <!-- Optional common site JS (enable later once the map works) -->
+  {# <script src="{{ url_for('static', filename='site_common.js') }}"></script> #}
 </body>
 </html>
 
  <!-- This used some AI tools to help generate -->
  
+
+
+
+
+
 
 
 
