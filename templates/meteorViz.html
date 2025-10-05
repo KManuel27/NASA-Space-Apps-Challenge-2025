@@ -133,6 +133,9 @@
                 function findThemeButtons(){ return Array.from(document.querySelectorAll('#themeToggle, [data-theme-toggle]')); }
 
                 function applyTheme(t){
+                    // Update the data-theme attribute (used by CSS selectors) and keep
+                    // the class toggles for backward compatibility with other scripts.
+                    try { root.setAttribute('data-theme', t); } catch (e) {}
                     if(t === 'dark'){
                         root.classList.add('theme-dark'); root.classList.remove('theme-light');
                         findThemeButtons().forEach(b=> b.textContent = 'Light mode');
@@ -148,10 +151,22 @@
                 function syncPlotlyTheme(){
                     if(typeof Plotly === 'undefined') return;
                     const plots = document.querySelectorAll('.js-plotly-plot');
-                    const isDark = root.classList.contains('theme-dark');
+                    const theme = document.documentElement.getAttribute('data-theme') ||
+                                  (root.classList.contains('theme-dark') ? 'dark' : 'light');
+                    const isDark = theme === 'dark';
                     const textcolor = isDark ? '#f7f9fb' : '#0b1220';
+                    const bg = isDark ? 'rgba(0,0,0,0)' : 'rgba(255,255,255,0)';
                     plots.forEach(div=>{
-                        try{ Plotly.relayout(div, { 'paper_bgcolor': 'rgba(0,0,0,0)', 'plot_bgcolor': 'rgba(0,0,0,0)', 'font.color': textcolor }); }catch(e){}
+                        try{
+                            Plotly.relayout(div, {
+                                'paper_bgcolor': bg,
+                                'plot_bgcolor': bg,
+                                'font.color': textcolor,
+                                'scene.xaxis.color': textcolor,
+                                'scene.yaxis.color': textcolor,
+                                'scene.zaxis.color': textcolor
+                            });
+                        }catch(e){}
                     });
                 }
 
