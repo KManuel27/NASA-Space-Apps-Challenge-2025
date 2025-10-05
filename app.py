@@ -247,12 +247,55 @@ def available_meteors_json():
 
 @app.route("/map")
 def map_page_noid():
-    return render_template("map.html", asteroid_id=None)
+    # No asteroid selected - render map with empty params
+    return render_template(
+        "map.html",
+        asteroid_id=None,
+        initial_diameter_m=None,
+        initial_velocity_kms=None,
+        initial_density_kg_m3=None,
+    )
  
 
 @app.route("/map/<asteroid_id>")
 def map_page(asteroid_id: str):
-    return render_template("map.html", asteroid_id=asteroid_id)  # TODO: pass data for initial rendering
+    # Try to fetch asteroid details and provide initial parameters to the map page
+    initial_diameter_m = None
+    initial_velocity_kms = None
+    initial_density_kg_m3 = 3000
+    try:
+        obj = neoWs.lookup_asteroid(asteroid_id)
+        # estimated_diameter -> kilometers object may contain min/max
+        d_km = None
+        try:
+            km_obj = obj.get("estimated_diameter", {}).get("kilometers", {})
+            d_km = km_obj.get("estimated_diameter_max") or km_obj.get("estimated_diameter_min")
+        except Exception:
+            d_km = None
+        if d_km is not None:
+            initial_diameter_m = float(d_km) * 1000.0
+
+        # relative velocity from first close approach entry
+        try:
+            cad = obj.get("close_approach_data", [])
+            if cad:
+                rel = cad[0].get("relative_velocity", {})
+                v_kps = rel.get("kilometers_per_second")
+                if v_kps is not None:
+                    initial_velocity_kms = float(v_kps)
+        except Exception:
+            initial_velocity_kms = None
+    except Exception:
+        # fall back to defaults above
+        pass
+
+    return render_template(
+        "map.html",
+        asteroid_id=asteroid_id,
+        initial_diameter_m=initial_diameter_m,
+        initial_velocity_kms=initial_velocity_kms,
+        initial_density_kg_m3=initial_density_kg_m3,
+    )  # TODO: pass data for initial rendering
 
 
 if __name__ == "__main__":

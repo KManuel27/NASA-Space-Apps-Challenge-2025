@@ -88,9 +88,12 @@ map.on('click', async (e) => {
   blastLayers.forEach(l => map.removeLayer(l));
   blastLayers = [];
 
-  const d = parseFloat(document.getElementById('diam').value || "0");
-  const v = parseFloat(document.getElementById('vel').value || "0");
-  const rho = parseFloat(document.getElementById('dens').value || "3000");
+  // Read asteroid parameters from the injected global if present, otherwise fall back to query params or defaults
+  const params = window.__ASTEROID_PARAMS__ || {};
+  const q = (k)=> parseFloat(new URLSearchParams(window.location.search).get(k));
+  const d = (params.initial_diameter_m || q('d') || q('diam') || 140);
+  const v = (params.initial_velocity_kms || q('v') || q('vel') || 19);
+  const rho = (params.initial_density_kg_m3 || q('rho') || q('dens') || 3000);
 
   const [elev, place] = await Promise.all([
     getElevation(lat, lon).catch(() => null),
@@ -140,11 +143,14 @@ map.on('click', async (e) => {
 // Optional: auto-load scenario from query string (?lat&lon&d&v&rho)
 function qp(k){ return new URLSearchParams(window.location.search).get(k); }
 const qlat = parseFloat(qp('lat')), qlon = parseFloat(qp('lon'));
-const qd = parseFloat(qp('d')), qv = parseFloat(qp('v')), qrho = parseFloat(qp('rho'));
 window.addEventListener('load', () => {
-  if (!isNaN(qd))  document.getElementById('diam').value = qd;
-  if (!isNaN(qv))  document.getElementById('vel').value  = qv;
-  if (!isNaN(qrho))document.getElementById('dens').value = qrho;
+  // If the server injected asteroid params, use them to pre-run a scenario when coords are provided
+  const params = window.__ASTEROID_PARAMS__ || {};
+  const qd = parseFloat(qp('d') || qp('diam'));
+  const qv = parseFloat(qp('v') || qp('vel'));
+  const qrho = parseFloat(qp('rho') || qp('dens'));
+
+  // If query values present, we allow them to influence the run; otherwise server-injected values are used by click handler
   if (!isNaN(qlat) && !isNaN(qlon)) {
     map.setView([qlat, qlon], 9);
     map.fire('click', { latlng: L.latLng(qlat, qlon) });

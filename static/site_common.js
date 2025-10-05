@@ -6,12 +6,23 @@
   function findThemeButtons(){ return Array.from(document.querySelectorAll('#themeToggle, [data-theme-toggle]')); }
 
   function applyTheme(t){
-    if(t === 'dark'){
-      root.classList.add('theme-dark'); root.classList.remove('theme-light');
-      findThemeButtons().forEach(b=> b.textContent = 'Light mode');
+    // Apply theme classes and update accessible toggle labels. No emoji.
+    if (t === 'dark') {
+      root.classList.add('theme-dark');
+      root.classList.remove('theme-light');
+      findThemeButtons().forEach(b => {
+        b.setAttribute('aria-pressed', 'true');
+        const label = b.querySelector('.label');
+        if (label) label.textContent = 'Light mode';
+      });
     } else {
-      root.classList.add('theme-light'); root.classList.remove('theme-dark');
-      findThemeButtons().forEach(b=> b.textContent = 'Dark mode');
+      root.classList.add('theme-light');
+      root.classList.remove('theme-dark');
+      findThemeButtons().forEach(b => {
+        b.setAttribute('aria-pressed', 'false');
+        const label = b.querySelector('.label');
+        if (label) label.textContent = 'Dark mode';
+      });
     }
   }
 
@@ -78,7 +89,13 @@
       const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       applyTheme(prefersDark ? 'dark' : 'light');
     }
-    findThemeButtons().forEach(b=> b.addEventListener('click', function(){ const current = getStored() || (root.classList.contains('theme-dark') ? 'dark' : 'light'); const next = current === 'dark' ? 'light' : 'dark'; applyTheme(next); setStored(next); }));
+    findThemeButtons().forEach(b=> b.addEventListener('click', function(){
+      const current = getStored() || (root.classList.contains('theme-dark') ? 'dark' : 'light');
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next); setStored(next);
+      // ensure the aria-pressed is set for this control specifically
+      try{ b.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false'); }catch(e){}
+    }));
 
     // Init tabs and sidebar
     initTabs();

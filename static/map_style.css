@@ -1,26 +1,24 @@
-/* Default header height fallback */
-:root { --header-height: 64px; }
+/* Map page specific tweaks that rely on shared variables in site_base.css */
 
-html, body { height: 100%; margin: 0; }
-
-/* Keep header fixed */
+/* Make header opaque and match site_base theme variables */
 .site-header {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: var(--header-height);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 12px;
-  background: #111;
-  color: #fff;
-  z-index: 1001;
+  /* let site_base control most layout; ensure fully opaque header */
+  /* disable blur so the header is solid/opaque like other pages */
+  backdrop-filter: none !important;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
-/* Map fills everything below header */
-#map {
-  position: fixed;
-  top: var(--header-height);
-  left: 0; right: 0; bottom: 0;
-  width: 100%;
-}
+.site-brand { display:flex; flex-direction:column; gap:2px; }
+.site-title { font-weight:700; color:inherit; text-decoration:none; font-size:1.05rem; }
+.site-subtitle { font-size:0.8rem; color:inherit; opacity:0.85; }
+
+.site-controls { display:flex; align-items:center; gap:8px; }
+
+/* Theme toggle - keep visual parity with site_base buttons */
+.theme-toggle { padding:0.6rem 0.9rem; border-radius:6px; border-width:1px; border-style:solid; background:transparent; cursor:pointer; }
+html.theme-light .theme-toggle { border-color: rgba(0,0,0,0.12); color: var(--text-light); }
+html.theme-dark .theme-toggle { border: 1px solid rgba(255,255,255,0.6); color: var(--text-dark); background: rgba(255,255,255,0.04); }
+
+/* Ensure the map sits below the header and fills the remaining viewport (site_base also defines #map but keep a fallback) */
+#map{ height: calc(100vh - var(--header-height)); width:100%; }
+

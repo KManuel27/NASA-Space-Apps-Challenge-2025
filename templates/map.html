@@ -8,36 +8,43 @@
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 
-  <!-- Your map styles -->
+  <!-- Your map + site styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='map_style.css') }}">
-  <!-- Optional site styles (enable later if you like) -->
-  {# <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}"> #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <header class="site-header">
-    <h1 class="site-title"><a href="/">Meteor Madness</a></h1>
+    <button class="back-button" onclick="history.back()">← Back</button>
+    <div class="site-brand">
+      <a class="site-title" href="/">Meteor Madness</a>
+      <span class="site-subtitle">Impact Map</span>
+    </div>
     <div class="site-controls">
-      <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
+      <button id="themeToggle" class="theme-toggle" aria-pressed="false" aria-label="Toggle theme" data-theme-toggle>
+        <span class="label">Toggle theme</span>
+      </button>
     </div>
   </header>
 
   <div id="map"></div>
 
-  <div class="input-panel">
-    <label>Diameter (m): <input id="diam" type="number" value="140" min="1"></label>
-    <label>Velocity (km/s): <input id="vel" type="number" value="19" min="1"></label>
-    <label>Material density (kg/m³): <input id="dens" type="number" value="3000" min="100"></label>
-    <div class="muted" style="margin-top:.5rem">
-      Population auto-detected by nearest place (OSM). Rates are typical defaults by place type.
-    </div>
-  </div>
+  {# Inject parameters if server provided an asteroid id (diameter in metres, velocity km/s, density kg/m^3) #}
+  <script>
+    window.__ASTEROID_PARAMS__ = {
+      asteroid_id: {{ asteroid_id | tojson }},
+      initial_diameter_m: {{ initial_diameter_m | tojson }},
+      initial_velocity_kms: {{ initial_velocity_kms | tojson }},
+      initial_density_kg_m3: {{ initial_density_kg_m3 | tojson }}
+    };
+  </script>
 
   <!-- Leaflet script -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Site-wide JS (theme toggle + small helpers) -->
+  <script src="{{ url_for('static', filename='site_common.js') }}"></script>
   <!-- Your map logic -->
   <script src="{{ url_for('static', filename='map_script.js') }}"></script>
-  <!-- Optional common site JS (enable later once the map works) -->
-  {# <script src="{{ url_for('static', filename='site_common.js') }}"></script> #}
 </body>
 </html>
 
