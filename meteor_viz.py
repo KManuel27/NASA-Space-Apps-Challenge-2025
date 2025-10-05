@@ -219,77 +219,126 @@ def simulate_sun_earth_asteroid(
     # (not used by the Plotly fragment)
 
     # Build Plotly traces (lines + markers)
-    asteroid_trace = {
-        "type": "scatter3d",
-        "mode": "lines",
-        "x": ast_xs,
-        "y": ast_ys,
-        "z": ast_zs,
-        "line": {"color": "#ef4444", "width": 3},
-        "name": "Asteroid orbit",
-        "hoverinfo": "none",
+    # Build planet orbits up to Mars (approximate elements — adequate for a visual)
+    planets = {
+        'Mercury': {
+            'a': 0.387, 'e': 0.2056, 'i': 7.0,
+            'Omega': 48.331, 'omega': 29.124,
+            'color': '#b36200', 'size': 3,
+        },
+        'Venus': {
+            'a': 0.723, 'e': 0.0067, 'i': 3.39,
+            'Omega': 76.680, 'omega': 54.884,
+            'color': '#f59e0b', 'size': 4,
+        },
+        'Earth': {
+            'a': earth_a, 'e': earth_e, 'i': earth_i,
+            'Omega': earth_Omega, 'omega': earth_omega,
+            'color': '#3b82f6', 'size': 5,
+        },
+        'Mars': {
+            'a': 1.524, 'e': 0.0934, 'i': 1.85,
+            'Omega': 49.558, 'omega': 286.537,
+            'color': '#ef4444', 'size': 4,
+        },
     }
 
-    earth_trace = {
-        "type": "scatter3d",
-        "mode": "lines",
-        "x": earth_xs,
-        "y": earth_ys,
-        "z": earth_zs,
-        "line": {"color": "#3b82f6", "width": 2, "dash": "dot"},
-        "name": "Earth orbit",
-        "hoverinfo": "none",
+    planet_coords = {}
+    for name, p in planets.items():
+        xs_p, ys_p, zs_p = _orbit_coords_3d(p['a'], p['e'], p['i'], p['Omega'], p['omega'], n_points=n_points)
+        planet_coords[name] = (xs_p, ys_p, zs_p)
+
+    # Orbit lines: asteroid + planets (dotted for asteroid to emphasize motion)
+    asteroid_trace = {
+        'type': 'scatter3d', 'mode': 'lines', 'x': ast_xs, 'y': ast_ys, 'z': ast_zs,
+        'line': {'color': '#ef4444', 'width': 2, 'dash': 'dot'}, 'name': 'Asteroid orbit', 'hoverinfo': 'none'
     }
+
+    planet_orbit_traces = []
+    for pname, p in planets.items():
+        xs_p, ys_p, zs_p = planet_coords[pname]
+        planet_orbit_traces.append({
+            'type': 'scatter3d', 'mode': 'lines', 'x': xs_p, 'y': ys_p, 'z': zs_p,
+            'line': {'color': p['color'], 'width': 2, 'dash': 'dash'}, 'name': f"{pname} orbit", 'hoverinfo': 'none'
+        })
 
     sun_trace = {
-        "type": "scatter3d",
-        "mode": "markers",
-        "x": [0],
-        "y": [0],
-        "z": [0],
-        "marker": {"color": "#f59e0b", "size": 8},
-        "name": "Sun",
+        'type': 'scatter3d',
+        'mode': 'markers',
+        'x': [0], 'y': [0], 'z': [0],
+        'marker': {'color': '#f59e0b', 'size': 10},
+        'name': 'Sun',
     }
 
+    # Marker traces (initial positions)
     asteroid_marker = {
-        "type": "scatter3d",
-        "mode": "markers",
-        "x": [ast_xs[0]],
-        "y": [ast_ys[0]],
-        "z": [ast_zs[0]],
-        "marker": {"color": "#ef4444", "size": 5},
-        "name": "Asteroid",
+        'type': 'scatter3d',
+        'mode': 'markers',
+        'x': [ast_xs[0]], 'y': [ast_ys[0]], 'z': [ast_zs[0]],
+        'marker': {'color': '#ef4444', 'size': 5},
+        'name': 'Asteroid',
     }
 
-    earth_marker = {
-        "type": "scatter3d",
-        "mode": "markers",
-        "x": [earth_xs[0]],
-        "y": [earth_ys[0]],
-        "z": [earth_zs[0]],
-        "marker": {"color": "#3b82f6", "size": 6},
-        "name": "Earth",
+    planet_marker_traces = []
+    for pname, p in planets.items():
+        xs_p, ys_p, zs_p = planet_coords[pname]
+        planet_marker_traces.append({
+            'type': 'scatter3d',
+            'mode': 'markers',
+            'x': [xs_p[0]], 'y': [ys_p[0]], 'z': [zs_p[0]],
+            'marker': {'color': p['color'], 'size': p['size']},
+            'name': pname,
+        })
+
+    # Trailing asteroid path trace (starts empty)
+    asteroid_tail = {
+        'type': 'scatter3d',
+        'mode': 'lines',
+        'x': [], 'y': [], 'z': [],
+        'line': {'color': '#ef4444', 'width': 3},
+        'name': 'Asteroid trail',
     }
 
-    # Prepare animation frames (move both markers along their orbits)
+    # Compose final data (orbit lines first, then sun, then markers, then tail)
+    data = [asteroid_trace] + planet_orbit_traces + [sun_trace, asteroid_marker] + planet_marker_traces + [asteroid_tail]
+
+    # Prepare animation frames (move asteroid + planet markers along their orbits, update tail)
     frames = []
-    steps = 180
-    step_stride = max(1, n_points // steps)
-    for k in range(0, n_points + 1, step_stride):
-        idx = k
-        frame = {
-            "name": str(idx),
-            "data": [
-                {"x": [ast_xs[idx]], "y": [ast_ys[idx]], "z": [ast_zs[idx]]},
-                {
-                    "x": [earth_xs[idx % len(earth_xs)]],
-                    "y": [earth_ys[idx % len(earth_ys)]],
-                    "z": [earth_zs[idx % len(earth_zs)]],
-                },
-                # trailing asteroid path up to current index
-                {"x": ast_xs[: idx + 1], "y": ast_ys[: idx + 1], "z": ast_zs[: idx + 1]},
-            ],
-        }
+    step_stride = 1
+    # Determine trace indices that will be updated by frames
+    # data layout: [0]=asteroid_orbit, [1..N]=planet_orbits, [N+1]=sun,
+    # [N+2]=asteroid_marker, [N+3..]=planet_markers..., [last]=asteroid_tail
+    n_planets = len(planet_orbit_traces)
+    idx_asteroid_marker = 1 + n_planets + 1  # after asteroid + planet_orbits + sun
+    idx_first_planet_marker = idx_asteroid_marker + 1
+    idx_asteroid_tail = len(data) - 1
+
+    for k in range(0, n_points, step_stride):
+        idx = k % n_points
+        # build marker positions
+        frame_data = []
+        traces_idx = []
+
+        # asteroid marker
+        frame_data.append({'x': [ast_xs[idx]], 'y': [ast_ys[idx]], 'z': [ast_zs[idx]]})
+        traces_idx.append(idx_asteroid_marker)
+
+        # planet markers in same order as planet_marker_traces
+        pi = 0
+        for pname in planets.keys():
+            xs_p, ys_p, zs_p = planet_coords[pname]
+            frame_data.append({'x': [xs_p[idx % len(xs_p)]], 'y': [ys_p[idx % len(ys_p)]], 'z': [zs_p[idx % len(zs_p)]]})
+            traces_idx.append(idx_first_planet_marker + pi)
+            pi += 1
+
+        # trailing asteroid path (up to current index)
+        tail_x = ast_xs[: idx + 1]
+        tail_y = ast_ys[: idx + 1]
+        tail_z = ast_zs[: idx + 1]
+        frame_data.append({'x': tail_x, 'y': tail_y, 'z': tail_z})
+        traces_idx.append(idx_asteroid_tail)
+
+        frame = {'name': str(idx), 'data': frame_data, 'traces': traces_idx}
         frames.append(frame)
 
     # Layouts for light and dark themes (transparent background; colors chosen)
@@ -326,8 +375,6 @@ def simulate_sun_earth_asteroid(
     uid = int(time.time() * 1000) % 1000000
     div_id = f"orbit_plot_{uid}"
 
-    data = [asteroid_trace, earth_trace, sun_trace, asteroid_marker, earth_marker]
-
     # Compose a single HTML + JS fragment. Build using concatenation to avoid
     # f-string brace-escaping issues when embedding large JS snippets.
     parts = []
@@ -358,10 +405,24 @@ def simulate_sun_earth_asteroid(
     parts.append('    // disable scrollZoom to avoid attaching passive-unfriendly wheel/touch listeners')
     parts.append('    const config = {responsive:true, displayModeBar:false, scrollZoom:false};')
     parts.append('    Plotly.newPlot(container, traces, selectedLayout, config).then(function(){')
-    parts.append('        Plotly.addFrames(container, frames);')
-    parts.append('        var animateOpts = {frame: {duration: 40, redraw: true},')
-    parts.append('            transition: {duration: 0}, mode: "immediate", fromcurrent: true};')
-    parts.append('        Plotly.animate(container, null, animateOpts);')
+    parts.append('        // Use a lightweight 60 FPS loop to update markers and trail for a smooth animation')
+    parts.append('        let idx = 0;')
+    parts.append('        const fps = 60;')
+    parts.append('        const interval = Math.round(1000 / fps);')
+    parts.append('        const total = frames.length;')
+    parts.append('        function step(){')
+    parts.append('            const f = frames[idx];')
+    parts.append('            try{')
+    parts.append('                for(let j=0;j<f.traces.length;j++){')
+    parts.append('                    const t = f.traces[j];')
+    parts.append('                    const update = f.data[j];')
+    parts.append('                    Plotly.restyle(container, update, [t]);')
+    parts.append('                }')
+    parts.append('            }catch(e){}')
+    parts.append('            idx = (idx + 1) % total;')
+    parts.append('        }')
+    parts.append('        // start loop')
+    parts.append('        setInterval(step, interval);')
     parts.append('    });')
     parts.append('})();')
     parts.append('</script>')
@@ -378,7 +439,7 @@ if __name__ == '__main__':
             data = json.load(f)
             if isinstance(data, list) and data:
                 html = simulate_sun_earth_asteroid(data[0])
-                print(html[:200])
+                print(html)
     except Exception:
         pass
 
