@@ -1,11 +1,67 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Meteor Visualisation</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meteor Visualization</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}" />
+    <style>
+        /* Minimal self-contained site styling inspired by availableMeteors.html */
+        :root {
+            --bg-dark: #000000;
+            --fg-dark: #ffffff;
+            --panel-bg-dark: rgba(255,255,255,0.04);
+            --accent: #111827;
+        }
+        [data-theme="light"] {
+            --bg-dark: #ffffff;
+            --fg-dark: #0b1220;
+            --panel-bg-dark: rgba(0,0,0,0.04);
+        }
+
+        html,body { height:100%; margin:0; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--fg-dark);
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+        }
+
+        .site-header {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.03);
+            background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+        }
+        .site-title { margin:0; font-size:18px; }
+        .site-title a { color:inherit; text-decoration:none; font-weight:700; }
+        .site-controls button {
+            background:transparent; color:inherit; border:1px solid rgba(255,255,255,0.06);
+            padding:6px 10px; border-radius:6px; cursor:pointer;
+        }
+
+        main { padding:18px 20px 40px; }
+        h1.page-title { margin:0 0 12px 0; font-size:22px; }
+
+        .viz-wrap { display:flex; gap:20px; align-items:flex-start; }
+        .viz-main { flex:1 1 680px; min-width:260px; }
+        .viz-panel {
+            width:320px; background:var(--panel-bg-dark); padding:16px; border-radius:10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+        .viz-panel h2 { margin-top:0; }
+        .viz-panel p { margin:8px 0; }
+
+        .btn { display:inline-block; padding:8px 12px; border-radius:8px; border:0; cursor:pointer; background:var(--accent); color:#fff; }
+
+        /* Responsive: stack on small screens */
+        @media (max-width: 880px) {
+            .viz-wrap { flex-direction:column-reverse; }
+            .viz-panel { width:100%; }
+        }
+    </style>
 </head>
-<body>
+<body data-theme="dark">
     <header class="site-header">
         <h1 class="site-title"><a href="/">Meteor Madness</a></h1>
         <div class="site-controls">
@@ -13,33 +69,82 @@
         </div>
     </header>
 
-    <h1 style="margin-left:1rem;">Meteor Visualisation</h1>
+    <main>
+        <h1 class="page-title">Meteor Visualization</h1>
 
-    <!-- Open Sidebar Button -->
-    <button id="openBtn" onclick="openSidebar()">Asteroid Info</button>
+        <div class="viz-wrap">
+            <section class="viz-main">
+                <!-- Plotly graph (injected from server) -->
+                {{ graph_html|safe }}
+            </section>
 
-    <!-- Sidebar -->
-    <div id="mySidebar">
-        <div class="sidebar-content">
-            <span class="closebtn" onclick="closeSidebar()">&times;</span>
-            <h2>Asteroid Data</h2>
-            <p><strong>Name:</strong> {{ asteroid_info.name }}</p>
-            <p><strong>Diameter:</strong> {{ asteroid_info.diameter }} km</p>
-            <p><strong>Miss Distance:</strong> {{ asteroid_info.miss_distance }} km</p>
-            <p><strong>Closest Approach Date:</strong> {{ asteroid_info.closest_approach_date }}</p>
-            <p><strong>Velocity:</strong> {{ asteroid_info.velocity }} km/s</p>
-            <p><strong>Risk:</strong> {{ asteroid_info.risk }}</p>
+            <aside class="viz-panel" aria-labelledby="panelTitle">
+                <h2 id="panelTitle">Asteroid Info</h2>
+                <p><strong>Name:</strong> {{ asteroid_info.name }}</p>
+                <p><strong>Diameter:</strong> {{ asteroid_info.diameter }} km</p>
+                <p><strong>Miss Distance:</strong> {{ asteroid_info.miss_distance }} km</p>
+                <p><strong>Closest Approach:</strong> {{ asteroid_info.closest_approach_date }}</p>
+                <p><strong>Velocity:</strong> {{ asteroid_info.velocity }} km/s</p>
+                <p><strong>Risk:</strong> {{ asteroid_info.risk }}</p>
+
+                <div style="margin-top:12px; display:flex; gap:8px;">
+                    <button class="btn" onclick="location.href='/'">Back</button>
+                    <button class="btn" id="impactBtn" onclick="location.href='/map'">Visualize Impact</button>
+                </div>
+            </aside>
         </div>
+    </main>
 
-    <!-- Visualise Impact Button -->
-    <button id="impactBtn" onclick="window.location.href='/map'">Visualise Impact</button>
-    </div>
+        <script>
+            // Inlined theme toggle and Plotly sync (mirrors site_common.js behaviour)
+            (function(){
+                const THEME_KEY = 'site-theme';
+                const root = document.documentElement;
+                const btn = document.getElementById('themeToggle');
 
-    <!-- Plotly graph -->
-        <div id="plotly-container" class="plotly-theme-container">
-            {{ graph_html|safe }}
-        </div>
+                function findThemeButtons(){ return Array.from(document.querySelectorAll('#themeToggle, [data-theme-toggle]')); }
 
-    <script src="{{ url_for('static', filename='site_common.js') }}"></script>
+                function applyTheme(t){
+                    if(t === 'dark'){
+                        root.classList.add('theme-dark'); root.classList.remove('theme-light');
+                        findThemeButtons().forEach(b=> b.textContent = 'Light mode');
+                    } else {
+                        root.classList.add('theme-light'); root.classList.remove('theme-dark');
+                        findThemeButtons().forEach(b=> b.textContent = 'Dark mode');
+                    }
+                }
+
+                function getStored(){ try { return localStorage.getItem(THEME_KEY); } catch(e){ return null; } }
+                function setStored(v){ try{ localStorage.setItem(THEME_KEY, v); } catch(e){} }
+
+                function syncPlotlyTheme(){
+                    if(typeof Plotly === 'undefined') return;
+                    const plots = document.querySelectorAll('.js-plotly-plot');
+                    const isDark = root.classList.contains('theme-dark');
+                    const textcolor = isDark ? '#f7f9fb' : '#0b1220';
+                    plots.forEach(div=>{
+                        try{ Plotly.relayout(div, { 'paper_bgcolor': 'rgba(0,0,0,0)', 'plot_bgcolor': 'rgba(0,0,0,0)', 'font.color': textcolor }); }catch(e){}
+                    });
+                }
+
+                document.addEventListener('DOMContentLoaded', function(){
+                    const stored = getStored();
+                    if(stored) applyTheme(stored);
+                    else {
+                        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                        applyTheme(prefersDark ? 'dark' : 'light');
+                    }
+
+                    findThemeButtons().forEach(b=> b.addEventListener('click', function(){
+                        const current = getStored() || (root.classList.contains('theme-dark') ? 'dark' : 'light');
+                        const next = current === 'dark' ? 'light' : 'dark';
+                        applyTheme(next); setStored(next); syncPlotlyTheme();
+                    }));
+
+                    // Resize Plotly plots and sync colours after initial load
+                    setTimeout(function(){ try{ syncPlotlyTheme(); var charts = document.querySelectorAll('[id^="orbit_plot_"]'); charts.forEach(function(c){ if(c) try{ Plotly.Plots.resize(c); }catch(e){} }); }catch(e){} }, 250);
+                });
+            })();
+        </script>
 </body>
 </html>
