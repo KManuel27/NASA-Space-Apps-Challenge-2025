@@ -14,432 +14,359 @@ Goals:
 - Return an HTML/SVG fragment that can be embedded directly in templates.
 """
 
-from typing import Any, Dict, Optional, Tuple
-import math
-import json
+import numpy as np
+import plotly.graph_objs as go
+from datetime import datetime, timedelta
 
-__all__ = ["simulate_sun_earth_asteroid"]
+# ====================================
+# Constants
+# ====================================
+G = 6.67430e-11
+M_sun = 1.989e30
+R_sun = 6.9634e8
+R_earth = 6.371e6
+R_asteroid = 5e5
+AU = 1.496e11
+mu_sun = G * M_sun
 
 
-def _safe_float(val: Any, default: Optional[float] = None) -> Optional[float]:
-    try:
-        if val is None:
-            return default
-        return float(val)
-    except Exception:
-        return default
+# Start configuration — Earth at perihelion (Jan 4, 2025)
+
+orbit_determination_date = datetime(2025, 1, 4)
+tca_date = datetime(2025, 10, 6)
+
+# Earth orbital elements
+a_earth = AU
+e_earth = 0.0167
+i_earth = 0.0
+T_earth = 365.25 * 24 * 3600
+
+# Simulation setup
+animation_days = 365
+dt = 60 * 60 * 24  # 1 day
+time_days = np.arange(animation_days)
+time_seconds = time_days * dt
+num_frames = animation_days
 
 
-def _parse_orbital_elements(obj: Dict[str, Any]) -> Dict[str, Optional[float]]:
-    """Extracts and converts orbital elements from a NeoWs object.
+# Orbital mechanics functions
 
-    Expected keys inside `orbital_data` (strings or numbers):
-      - semi_major_axis (AU)
-      - eccentricity
-      - inclination (deg)
-      - ascending_node_longitude (deg)  -- Ω
-      - perihelion_argument (deg)       -- ω
+def kepler_E(M, e, tol=1e-12):
+    E = M if e < 0.8 else np.pi
+    while True:
+        dE = (E - e * np.sin(E) - M) / (1 - e * np.cos(E))
+        E -= dE
+        if abs(dE) < tol:
+            break
+    return E
 
-    Returns a dict with floats or None for missing values.
-    """
-    od = (obj or {}).get("orbital_data") or {}
-    return {
-        "a": _safe_float(od.get("semi_major_axis")),
-        "e": _safe_float(od.get("eccentricity")),
-        "i": _safe_float(od.get("inclination")),
-        "Omega": _safe_float(od.get("ascending_node_longitude")),
-        "omega": _safe_float(od.get("perihelion_argument")),
+def true_anomaly(E, e):
+    return 2 * np.arctan2(np.sqrt(1 + e) * np.sin(E / 2),
+                          np.sqrt(1 - e) * np.cos(E / 2))
+
+def position_from_elements(a, e, i, T, t_seconds, M0=0.0, omega=0.0, Omega=0.0):
+    """Compute heliocentric 3D position including inclination, argument of perihelion, and longitude of node."""
+    M = (2 * np.pi * (t_seconds / T) + M0) % (2 * np.pi)
+    E = kepler_E(M, e)
+    nu = true_anomaly(E, e)
+    r = a * (1 - e**2) / (1 + e * np.cos(nu))
+    x_orb = r * np.cos(nu)
+    y_orb = r * np.sin(nu)
+
+    # Rotate from orbital plane to heliocentric ecliptic coordinates
+    x = (np.cos(Omega) * np.cos(omega) - np.sin(Omega) * np.sin(omega) * np.cos(i)) * x_orb + \
+        (-np.cos(Omega) * np.sin(omega) - np.sin(Omega) * np.cos(omega) * np.cos(i)) * y_orb
+    y = (np.sin(Omega) * np.cos(omega) + np.cos(Omega) * np.sin(omega) * np.cos(i)) * x_orb + \
+        (-np.sin(Omega) * np.sin(omega) + np.cos(Omega) * np.cos(omega) * np.cos(i)) * y_orb
+    z = (np.sin(omega) * np.sin(i)) * x_orb + (np.cos(omega) * np.sin(i)) * y_orb
+
+    return np.array([x, y, z])
+
+
+# Earth position
+
+M0_earth = 0.0
+earth_positions = np.array([
+    position_from_elements(a_earth, e_earth, i_earth, T_earth, t, M0_earth)
+    for t in time_seconds
+])
+
+
+# USER INPUTS — Asteroid orbital parameters
+
+asteroids_input = [
+    {
+        "name": "2021 ED5",
+        "color": "red",
+        "tca_date": "2025-10-06",
+        "diameter_min_km": 0.2469192656,
+        "diameter_max_km": 0.5521282628,
+        "M_deg": 20.69381708571853,
+        "q_au": 0.693,
+        "i_deg": 5.906333965846378,
+        "tp_bary": "2460911.548469043960",
+        "T_days": 1547.445355853369,
+        "Q_au": 2.618,
+        "n_deg_per_day": 0.2326414943430884,
+        "miss_distance_au": 0.0728452984,
+        "a_au": 2.618250911402056,
+        "e": 0.7341366398164377,
+        "omega_deg": 112.66148628257,
+        "Omega_deg": 182.1326382918859
+    },
+    {
+        "name": "2006 SS134",
+        "color": "orange",
+        "tca_date": "2025-10-01",
+        "diameter_min_km": 0.2,
+        "diameter_max_km": 0.3,
+        "M_deg": 86.83611608273382,
+        "q_au": 0.6536299112981256,
+        "i_deg": 19.53384221663039,
+        "tp_bary": "2460888.765349326200",
+        "T_days": 463.2228622966487,
+        "Q_au": 1.689651073171432,
+        "n_deg_per_day": 0.7771637138441916,
+        "miss_distance_au": 0.0812495489,
+        "a_au": 1.171640492234779,
+        "e": 0.4421241706563107,
+        "omega_deg": 256.174689651037,
+        "Omega_deg": 8.987533082435228
+    },
+    {
+        "name": "2020 GA2",
+        "color": "magenta",
+        "tca_date": "2025-10-07",
+        "diameter_min_km": 0.1572370824,
+        "diameter_max_km": 0.3515928047,
+        "M_deg": 352.3180733052727,
+        "q_au": 0.7343999690062724,
+        "i_deg": 42.98274472586962,
+        "tp_bary": "2461011.806245622687",
+        "T_days": 529.8473398556577,
+        "Q_au": 1.828499375025615,
+        "n_deg_per_day": 0.6794409878476924,
+        "miss_distance_au": 0.2978718991,
+        "a_au": 1.281449672015944,
+        "e": 0.4268990932348258,
+        "omega_deg": 93.01563318280928,
+        "Omega_deg": 22.88914007416489
+    },
+    {
+        "name": "1991 GO",
+        "color": "green",
+        "tca_date": "2025-10-01",
+        "diameter_min_km": 0.2538370294,
+        "diameter_max_km": 0.5675968529,
+        "M_deg": 2.405072222117659,
+        "q_au": 0.6659157393293433,
+        "i_deg": 9.554568968911488,
+        "tp_bary": "2460993.978190500453",
+        "T_days": 976.2082810842199,
+        "Q_au": 3.185845596319214,
+        "n_deg_per_day": 0.3687737616814397,
+        "miss_distance_au": 0.4680004601,
+        "a_au": 1.925880667824279,
+        "e": 0.6542279329894064,
+        "omega_deg": 89.77142930391584,
+        "Omega_deg": 23.94264848560579
+    },
+    {
+        "name": "2021 SZ4",
+        "color": "pink",
+        "tca_date": "2025-10-04",
+        "diameter_min_km": 0.2140695897,
+        "diameter_max_km": 0.4786741544,
+        "M_deg": 6.552951025467921,
+        "q_au": 0.2971912349744232,
+        "i_deg": 26.40210694019939,
+        "tp_bary": "2460987.759115001827",
+        "T_days": 699.9470286770122,
+        "Q_au": 2.788419669124214,
+        "n_deg_per_day": 0.514324634937654,
+        "miss_distance_au": 0.4805731264,
+        "a_au": 1.542805452049318,
+        "e": 0.807369597651044,
+        "omega_deg": 129.5871099387515,
+        "Omega_deg": 28.37777260831761
     }
+]
 
 
-def _orbit_coords(
-    a: float,
-    e: float,
-    i_deg: float,
-    Omega_deg: float,
-    omega_deg: float,
-    n_points: int = 360,
-) -> Tuple[list, list]:
-    """Compute top-down (x,y) coordinates for an orbit given classical elements.
+# Convert Input Parameters to Orbital Data
 
-    The returned coordinates are in astronomical units (AU). The projection is
-    the ecliptic plane (z ignored). Uses standard rotation from orbital plane
-    to ecliptic: r * R_z(Omega) * R_x(i) * R_z(omega) * [cos(nu), sin(nu), 0].
-    """
-    i = math.radians(i_deg or 0.0)
-    Omega = math.radians(Omega_deg or 0.0)
-    omega = math.radians(omega_deg or 0.0)
+asteroid_sets = []
+for asteroid in asteroids_input:
+    name = asteroid["name"]
+    color = asteroid["color"]
+    a = asteroid["a_au"] * AU
+    e = asteroid["e"]
+    i = np.radians(asteroid["i_deg"])
+    omega = np.radians(asteroid["omega_deg"])
+    Omega = np.radians(asteroid["Omega_deg"])
+    T_ast = asteroid["T_days"] * 86400.0
+    M0 = np.radians(asteroid["M_deg"])
+    avg_diam = 0.5 * (asteroid["diameter_min_km"] + asteroid["diameter_max_km"])
 
-    xs = []
-    ys = []
-    for k in range(n_points + 1):
-        nu = 2 * math.pi * k / n_points
-        r = a * (1 - e * e) / (1 + e * math.cos(nu))
-        # coordinates in orbital plane
-        x_orb = r * math.cos(nu)
-        y_orb = r * math.sin(nu)
+    tca_date_ast = datetime.strptime(asteroid["tca_date"], "%Y-%m-%d")
+    tca_days_ast = (tca_date_ast - orbit_determination_date).days
+    tca_seconds_ast = tca_days_ast * 86400.0
 
-        # rotate by argument of perihelion (omega)
-        x1 = x_orb * math.cos(omega) - y_orb * math.sin(omega)
-        y1 = x_orb * math.sin(omega) + y_orb * math.cos(omega)
+    pos = np.array([
+        position_from_elements(a, e, i, T_ast, t, M0, omega, Omega)
+        for t in time_seconds
+    ])
 
-        # rotate by inclination (i) about x-axis
-        y2 = y1 * math.cos(i)
-
-        # rotate by longitude of ascending node (Omega) about z-axis
-        x = x1 * math.cos(Omega) - y2 * math.sin(Omega)
-        y = x1 * math.sin(Omega) + y2 * math.cos(Omega)
-
-        xs.append(x)
-        ys.append(y)
-
-    return xs, ys
+    asteroid_sets.append((pos, color, name, avg_diam, tca_seconds_ast))
 
 
-def _to_svg_path(xs: list, ys: list, scale: float, cx: float, cy: float) -> str:
-    pts = []
-    for x, y in zip(xs, ys):
-        px = cx + x * scale
-        py = cy - y * scale
-        pts.append(f"{px:.2f},{py:.2f}")
-    return "M " + " L ".join(pts)
+# Sun sphere
+
+def create_sphere(center, radius, color, resolution=25):
+    u = np.linspace(0, 2 * np.pi, resolution)
+    v = np.linspace(0, np.pi, resolution)
+    x = center[0] + radius * np.outer(np.cos(u), np.sin(v))
+    y = center[1] + radius * np.outer(np.sin(u), np.sin(v))
+    z = center[2] + radius * np.outer(np.ones_like(u), np.cos(v))
+    return go.Surface(x=x, y=y, z=z,
+                      colorscale=[[0, color], [1, color]],
+                      opacity=0.9, showscale=False, hoverinfo='skip')
+
+sun_sphere = create_sphere([0, 0, 0], R_sun, "yellow")
 
 
-def simulate_sun_earth_asteroid(
-    asteroid_obj: Optional[Dict[str, Any]] = None,
-    *,
-    width: int = 700,
-    height: int = 700,
-) -> str:
-    """Return an inline SVG fragment showing Sun, Earth's orbit and asteroid orbit.
+# Frames for animation
 
-    Input: `asteroid_obj` should be the full NeoWs lookup object (dict). The
-    renderer will read `orbital_data` to obtain orbital elements. If fields are
-    missing, sensible defaults are used.
-    """
-    # Defaults for Earth
-    earth_a = 1.0  # AU
-    earth_e = 0.0167
-    earth_i = 0.0
-    earth_Omega = 0.0
-    earth_omega = 102.9372  # argument of perihelion (approx), degrees
+frames = []
+for k in range(num_frames):
+    frame_data = []
 
-    # Parse asteroid elements and fallback when absent
-    elems = _parse_orbital_elements(asteroid_obj or {})
-    a = elems.get("a") if elems.get("a") is not None else 1.3
-    e = elems.get("e") if elems.get("e") is not None else 0.25
-    i_deg = elems.get("i") if elems.get("i") is not None else 10.0
-    Omega_deg = elems.get("Omega") if elems.get("Omega") is not None else 0.0
-    omega_deg = elems.get("omega") if elems.get("omega") is not None else 0.0
+    frame_data.append(dict(
+        type='surface', x=sun_sphere.x, y=sun_sphere.y, z=sun_sphere.z,
+        showscale=False, opacity=0.9
+    ))
 
-    # Compute orbit coordinates (AU)
-    ast_xs, ast_ys = _orbit_coords(a, e, i_deg, Omega_deg, omega_deg, n_points=360)
-    earth_xs, earth_ys = _orbit_coords(earth_a, earth_e, earth_i, earth_Omega, earth_omega, n_points=360)
+    frame_data.append(dict(
+        type='scatter3d', x=[earth_positions[k, 0]], y=[earth_positions[k, 1]], z=[earth_positions[k, 2]],
+        mode='markers', marker=dict(size=1.5, color='blue'), name='Earth', showlegend=False
+    ))
+    frame_data.append(dict(
+        type='scatter3d', x=earth_positions[:k+1, 0], y=earth_positions[:k+1, 1], z=earth_positions[:k+1, 2],
+        mode='lines', line=dict(color='blue'), showlegend=False
+    ))
 
-    # Determine scale to fit both orbits into the canvas with margin
-    max_r = 0.0
-    for xs, ys in ((ast_xs, ast_ys), (earth_xs, earth_ys)):
-        for x, y in zip(xs, ys):
-            r = math.hypot(x, y)
-            if r > max_r:
-                max_r = r
-    if max_r <= 0:
-        max_r = 1.0
+    frame_data.append(dict(type='scatter3d', x=[0], y=[0], z=[R_sun*1.03],
+                           mode='text', text=['Sun'], textfont=dict(size=14, color='yellow'), showlegend=False))
+    frame_data.append(dict(type='scatter3d',
+                           x=[earth_positions[k, 0]], y=[earth_positions[k, 1]], z=[earth_positions[k, 2] + R_earth * 2000],
+                           mode='text', text=['Earth'], textfont=dict(size=12, color='blue'), showlegend=False))
 
-    margin = 0.08
-    pad = max(width, height) * margin
-    # compute usable canvas size (not used for Plotly rendering below)
-    _ = min(width, height) - 2 * pad
+    for (pos, color, label, diam, tca_s) in asteroid_sets:
+        frame_data.append(dict(
+            type='scatter3d', x=[pos[k, 0]], y=[pos[k, 1]], z=[pos[k, 2]],
+            mode='markers', marker=dict(size=1.2, color=color),
+            name=label, showlegend=False
+        ))
+        frame_data.append(dict(
+            type='scatter3d', x=pos[:k+1, 0], y=pos[:k+1, 1], z=pos[:k+1, 2],
+            mode='lines', line=dict(color=color), showlegend=False
+        ))
+        frame_data.append(dict(
+            type='scatter3d',
+            x=[pos[k, 0]], y=[pos[k, 1]], z=[pos[k, 2] + R_asteroid * 2000],
+            mode='text', text=[label], textfont=dict(size=12, color=color),
+            showlegend=False
+        ))
 
-    # Build SVG elements ( kept minimal here — SVG paths were computed but
-    # the final visualisation uses Plotly 3D rendering below )
-
-    # pick labels
-    name = "Unknown"
-    try:
-        if asteroid_obj and isinstance(asteroid_obj, dict):
-            name = (
-                asteroid_obj.get("name")
-                or asteroid_obj.get("designation")
-                or asteroid_obj.get("neo_reference_id")
-                or name
-            )
-    except Exception:
-        pass
-
-    # (Perihelion coordinates not required for the Plotly fragment)
-
-    # Build a Plotly-based 3D interactive visualisation (returned as HTML fragment).
-    # Create 3D coordinates for both asteroid and Earth (including z from inclination).
-    def _orbit_coords_3d(a, e, i_deg, Omega_deg, omega_deg, n_points=360):
-        i = math.radians(i_deg or 0.0)
-        Omega = math.radians(Omega_deg or 0.0)
-        omega = math.radians(omega_deg or 0.0)
-        xs = []
-        ys = []
-        zs = []
-        for k in range(n_points + 1):
-            nu = 2 * math.pi * k / n_points
-            r = a * (1 - e * e) / (1 + e * math.cos(nu))
-            x_orb = r * math.cos(nu)
-            y_orb = r * math.sin(nu)
-
-            # argument of perihelion rotation
-            x1 = x_orb * math.cos(omega) - y_orb * math.sin(omega)
-            y1 = x_orb * math.sin(omega) + y_orb * math.cos(omega)
-
-            # rotate by inclination about x-axis
-            y2 = y1 * math.cos(i)
-            z2 = y1 * math.sin(i)
-
-            # rotate by longitude of ascending node about z-axis
-            x = x1 * math.cos(Omega) - y2 * math.sin(Omega)
-            y = x1 * math.sin(Omega) + y2 * math.cos(Omega)
-            z = z2
-
-            xs.append(x)
-            ys.append(y)
-            zs.append(z)
-        return xs, ys, zs
-
-    n_points = 360
-    ast_xs, ast_ys, ast_zs = _orbit_coords_3d(
-        a, e, i_deg, Omega_deg, omega_deg, n_points=n_points
-    )
-    earth_xs, earth_ys, earth_zs = _orbit_coords_3d(
-        earth_a,
-        earth_e,
-        earth_i,
-        earth_Omega,
-        earth_omega,
-        n_points=n_points,
-    )
-
-    # Choose initial marker positions (kept for reference)
-    # (not used by the Plotly fragment)
-
-    # Build Plotly traces (lines + markers)
-    # Build planet orbits up to Mars (approximate elements — adequate for a visual)
-    planets = {
-        'Mercury': {
-            'a': 0.387, 'e': 0.2056, 'i': 7.0,
-            'Omega': 48.331, 'omega': 29.124,
-            'color': '#b36200', 'size': 3,
-        },
-        'Venus': {
-            'a': 0.723, 'e': 0.0067, 'i': 3.39,
-            'Omega': 76.680, 'omega': 54.884,
-            'color': '#f59e0b', 'size': 4,
-        },
-        'Earth': {
-            'a': earth_a, 'e': earth_e, 'i': earth_i,
-            'Omega': earth_Omega, 'omega': earth_omega,
-            'color': '#3b82f6', 'size': 5,
-        },
-        'Mars': {
-            'a': 1.524, 'e': 0.0934, 'i': 1.85,
-            'Omega': 49.558, 'omega': 286.537,
-            'color': '#ef4444', 'size': 4,
-        },
-    }
-
-    planet_coords = {}
-    for name, p in planets.items():
-        xs_p, ys_p, zs_p = _orbit_coords_3d(p['a'], p['e'], p['i'], p['Omega'], p['omega'], n_points=n_points)
-        planet_coords[name] = (xs_p, ys_p, zs_p)
-
-    # Orbit lines: asteroid + planets (dotted for asteroid to emphasize motion)
-    asteroid_trace = {
-        'type': 'scatter3d', 'mode': 'lines', 'x': ast_xs, 'y': ast_ys, 'z': ast_zs,
-        'line': {'color': '#ef4444', 'width': 2, 'dash': 'dot'}, 'name': 'Asteroid orbit', 'hoverinfo': 'none'
-    }
-
-    planet_orbit_traces = []
-    for pname, p in planets.items():
-        xs_p, ys_p, zs_p = planet_coords[pname]
-        planet_orbit_traces.append({
-            'type': 'scatter3d', 'mode': 'lines', 'x': xs_p, 'y': ys_p, 'z': zs_p,
-            'line': {'color': p['color'], 'width': 2, 'dash': 'dash'}, 'name': f"{pname} orbit", 'hoverinfo': 'none'
-        })
-
-    sun_trace = {
-        'type': 'scatter3d',
-        'mode': 'markers',
-        'x': [0], 'y': [0], 'z': [0],
-        'marker': {'color': '#f59e0b', 'size': 10},
-        'name': 'Sun',
-    }
-
-    # Marker traces (initial positions)
-    asteroid_marker = {
-        'type': 'scatter3d',
-        'mode': 'markers',
-        'x': [ast_xs[0]], 'y': [ast_ys[0]], 'z': [ast_zs[0]],
-        'marker': {'color': '#ef4444', 'size': 5},
-        'name': 'Asteroid',
-    }
-
-    planet_marker_traces = []
-    for pname, p in planets.items():
-        xs_p, ys_p, zs_p = planet_coords[pname]
-        planet_marker_traces.append({
-            'type': 'scatter3d',
-            'mode': 'markers',
-            'x': [xs_p[0]], 'y': [ys_p[0]], 'z': [zs_p[0]],
-            'marker': {'color': p['color'], 'size': p['size']},
-            'name': pname,
-        })
-
-    # Trailing asteroid path trace (starts empty)
-    asteroid_tail = {
-        'type': 'scatter3d',
-        'mode': 'lines',
-        'x': [], 'y': [], 'z': [],
-        'line': {'color': '#ef4444', 'width': 3},
-        'name': 'Asteroid trail',
-    }
-
-    # Compose final data (orbit lines first, then sun, then markers, then tail)
-    data = [asteroid_trace] + planet_orbit_traces + [sun_trace, asteroid_marker] + planet_marker_traces + [asteroid_tail]
-
-    # Prepare animation frames (move asteroid + planet markers along their orbits, update tail)
-    frames = []
-    step_stride = 1
-    # Determine trace indices that will be updated by frames
-    # data layout: [0]=asteroid_orbit, [1..N]=planet_orbits, [N+1]=sun,
-    # [N+2]=asteroid_marker, [N+3..]=planet_markers..., [last]=asteroid_tail
-    n_planets = len(planet_orbit_traces)
-    idx_asteroid_marker = 1 + n_planets + 1  # after asteroid + planet_orbits + sun
-    idx_first_planet_marker = idx_asteroid_marker + 1
-    idx_asteroid_tail = len(data) - 1
-
-    for k in range(0, n_points, step_stride):
-        idx = k % n_points
-        # build marker positions
-        frame_data = []
-        traces_idx = []
-
-        # asteroid marker
-        frame_data.append({'x': [ast_xs[idx]], 'y': [ast_ys[idx]], 'z': [ast_zs[idx]]})
-        traces_idx.append(idx_asteroid_marker)
-
-        # planet markers in same order as planet_marker_traces
-        pi = 0
-        for pname in planets.keys():
-            xs_p, ys_p, zs_p = planet_coords[pname]
-            frame_data.append({'x': [xs_p[idx % len(xs_p)]], 'y': [ys_p[idx % len(ys_p)]], 'z': [zs_p[idx % len(zs_p)]]})
-            traces_idx.append(idx_first_planet_marker + pi)
-            pi += 1
-
-        # trailing asteroid path (up to current index)
-        tail_x = ast_xs[: idx + 1]
-        tail_y = ast_ys[: idx + 1]
-        tail_z = ast_zs[: idx + 1]
-        frame_data.append({'x': tail_x, 'y': tail_y, 'z': tail_z})
-        traces_idx.append(idx_asteroid_tail)
-
-        frame = {'name': str(idx), 'data': frame_data, 'traces': traces_idx}
-        frames.append(frame)
-
-    # Layouts for light and dark themes (transparent background; colors chosen)
-    layout_light = {
-        "scene": {
-            "xaxis": {"showbackground": False, "showgrid": False, "zeroline": False, "visible": False},
-            "yaxis": {"showbackground": False, "showgrid": False, "zeroline": False, "visible": False},
-            "zaxis": {"showbackground": False, "showgrid": False, "zeroline": False, "visible": False},
-            "aspectmode": "data",
-        },
-        "paper_bgcolor": "rgba(0,0,0,0)",
-        "plot_bgcolor": "rgba(0,0,0,0)",
-        "showlegend": True,
-        "margin": {"l": 0, "r": 0, "b": 0, "t": 30},
-        "title": {"text": "Sun-Earth-Asteroid", "font": {"color": "#111827"}},
-    }
-
-    layout_dark = {
-        "scene": {
-            "xaxis": {"showbackground": False, "showgrid": False, "zeroline": False, "visible": False},
-            "yaxis": {"showbackground": False, "showgrid": False, "zeroline": False, "visible": False},
-            "zaxis": {"showbackground": False, "showgrid": False, "zeroline": False, "visible": False},
-            "aspectmode": "data",
-        },
-        "paper_bgcolor": "rgba(0,0,0,0)",
-        "plot_bgcolor": "rgba(0,0,0,0)",
-        "showlegend": True,
-        "margin": {"l": 0, "r": 0, "b": 0, "t": 30},
-        "title": {"text": "Sun-Earth-Asteroid", "font": {"color": "#ffffff"}},
-    }
-
-    # Compose the HTML fragment with a unique container id
-    import time
-    uid = int(time.time() * 1000) % 1000000
-    div_id = f"orbit_plot_{uid}"
-
-    # Compose a single HTML + JS fragment. Build using concatenation to avoid
-    # f-string brace-escaping issues when embedding large JS snippets.
-    parts = []
-    parts.append('<div id="' + div_id + '" style="width:' + str(width) + 'px; height:' + str(height) + 'px;">')
-    parts.append('</div>')
-    parts.append('<script>')
-    parts.append('(function(){')
-    parts.append('    const container = document.getElementById(' + json.dumps(div_id) + ');')
-    parts.append('    if (!container || typeof Plotly === "undefined") return;')
-    parts.append('    const traces = ' + json.dumps(data) + ';')
-    parts.append('    const frames = ' + json.dumps(frames) + ';')
-    parts.append('    const layoutLight = ' + json.dumps(layout_light) + ';')
-    parts.append('    const layoutDark = ' + json.dumps(layout_dark) + ';')
-    parts.append('    function detectDark() {')
-    parts.append('        try {')
-    parts.append('            const bt = document.body && document.body.getAttribute &&')
-    parts.append('                document.body.getAttribute("data-theme");')
-    parts.append('            if (bt === "dark") return true;')
-    parts.append('            if (bt === "light") return false;')
-    parts.append('            if (document.documentElement && document.documentElement.classList) {')
-    parts.append('                if (document.documentElement.classList.contains("theme-dark")) return true;')
-    parts.append('                if (document.documentElement.classList.contains("theme-light")) return false;')
-    parts.append('            }')
-    parts.append('        } catch (e) {}')
-    parts.append('        return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;')
-    parts.append('    }')
-    parts.append('    const selectedLayout = detectDark() ? layoutDark : layoutLight;')
-    parts.append('    // disable scrollZoom to avoid attaching passive-unfriendly wheel/touch listeners')
-    parts.append('    const config = {responsive:true, displayModeBar:false, scrollZoom:false};')
-    parts.append('    Plotly.newPlot(container, traces, selectedLayout, config).then(function(){')
-    parts.append('        // Use a lightweight 60 FPS loop to update markers and trail for a smooth animation')
-    parts.append('        let idx = 0;')
-    parts.append('        const fps = 60;')
-    parts.append('        const interval = Math.round(1000 / fps);')
-    parts.append('        const total = frames.length;')
-    parts.append('        function step(){')
-    parts.append('            const f = frames[idx];')
-    parts.append('            try{')
-    parts.append('                for(let j=0;j<f.traces.length;j++){')
-    parts.append('                    const t = f.traces[j];')
-    parts.append('                    const update = f.data[j];')
-    parts.append('                    Plotly.restyle(container, update, [t]);')
-    parts.append('                }')
-    parts.append('            }catch(e){}')
-    parts.append('            idx = (idx + 1) % total;')
-    parts.append('        }')
-    parts.append('        // start loop')
-    parts.append('        setInterval(step, interval);')
-    parts.append('    });')
-    parts.append('})();')
-    parts.append('</script>')
-
-    html = "\n".join(parts)
-
-    return html
+    frames.append(go.Frame(data=frame_data, name=str(k)))
 
 
-if __name__ == '__main__':
-    # quick smoke test when run directly using the provided meteor.json file
-    try:
-        with open('meteor.json', 'r') as f:
-            data = json.load(f)
-            if isinstance(data, list) and data:
-                html = simulate_sun_earth_asteroid(data[0])
-                print(html)
-    except Exception:
-        pass
+# Slider setup
+
+date_labels = [orbit_determination_date + timedelta(days=int(d)) for d in time_days]
+slider_steps = []
+for k in range(num_frames):
+    label_text = date_labels[k].strftime("%b %d")
+    color = "lightgray"
+    slider_steps.append(dict(
+        method='animate',
+        args=[[str(k)], dict(mode='immediate',
+                             frame=dict(duration=0, redraw=True),
+                             transition=dict(duration=0))],
+        label=f"<span style='color:{color}'>{label_text}</span>"
+    ))
+
+
+# Layout
+
+axis_range = 4 * AU
+hidden_axis = dict(range=[-axis_range, axis_range],
+                   showbackground=False, showgrid=False,
+                   showticklabels=False, zeroline=False, color="black")
+
+layout = go.Layout(
+    title="Sun–Earth–Asteroids System",
+    width=1000, height=850,
+    scene=dict(
+        xaxis=hidden_axis, yaxis=hidden_axis, zaxis=hidden_axis,
+        aspectmode='manual', aspectratio=dict(x=1, y=1, z=1),
+        camera=dict(eye=dict(x=1.8, y=1.8, z=1.2)), dragmode='orbit'
+    ),
+    paper_bgcolor='black', plot_bgcolor='black',
+    font=dict(color='white'), showlegend=False,
+    updatemenus=[dict(
+        type='buttons', showactive=False, y=1.05, x=1.18,
+        buttons=[
+            dict(label='Play', method='animate',
+                 args=[None, {"frame": {"duration": 60, "redraw": True},
+                              "fromcurrent": True, "transition": {"duration": 0}}]),
+            dict(label='Pause', method='animate',
+                 args=[[None], {"frame": {"duration": 0, "redraw": False},
+                                "mode": "immediate", "transition": {"duration": 0}}])
+        ]
+    )],
+    sliders=[dict(
+        steps=slider_steps, active=0, x=0.1, y=-0.05, len=0.8,
+        currentvalue=dict(prefix="Current Date: ", visible=True,
+                          font=dict(color="white", size=14)),
+        pad=dict(b=20, t=40), ticklen=6, tickwidth=2,
+        tickcolor="red", bgcolor="#2b2b2b",
+        bordercolor="gray", borderwidth=1
+    )]
+)
+
+# ====================================
+# Initial Scene
+# ====================================
+initial_data = [
+    dict(type='surface', x=sun_sphere.x, y=sun_sphere.y, z=sun_sphere.z,
+         showscale=False, opacity=0.9)
+]
+
+initial_data.extend([
+    dict(type='scatter3d', x=[earth_positions[0, 0]], y=[earth_positions[0, 1]], z=[earth_positions[0, 2]],
+         mode='markers', marker=dict(size=1.5, color='blue'), showlegend=False),
+    dict(type='scatter3d', x=[], y=[], z=[], mode='lines', line=dict(color='blue'), showlegend=False),
+    dict(type='scatter3d', x=[0], y=[0], z=[R_sun*1.03],
+         mode='text', text=['Sun'], textfont=dict(size=14, color='yellow'), showlegend=False),
+    dict(type='scatter3d',
+         x=[earth_positions[0, 0]], y=[earth_positions[0, 1]], z=[earth_positions[0, 2] + R_earth*2000],
+         mode='text', text=['Earth'], textfont=dict(size=12, color='blue'), showlegend=False)
+])
+
+for (pos, color, label, diam, tca_s) in asteroid_sets:
+    initial_data.extend([
+        dict(type='scatter3d', x=[pos[0, 0]], y=[pos[0, 1]], z=[pos[0, 2]],
+             mode='markers', marker=dict(size=1.2, color=color), showlegend=False),
+        dict(type='scatter3d', x=[], y=[], z=[], mode='lines', line=dict(color=color), showlegend=False),
+        dict(type='scatter3d',
+             x=[pos[0, 0]], y=[pos[0, 1]], z=[pos[0, 2] + R_asteroid*2000],
+             mode='text', text=[label], textfont=dict(size=12, color=color), showlegend=False)
+    ])
+
+
+
+fig = go.Figure(data=initial_data, layout=layout, frames=frames)
+fig.show()
+
 
