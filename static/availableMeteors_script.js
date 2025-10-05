@@ -2,9 +2,9 @@
   try {
     var LUNAR_DISTANCE_KM = 384400;
 
-    var fileInput  = document.getElementById('fileInput');
-    var viewToggle = document.getElementById('viewToggle');
-    var statusEl   = document.getElementById('status');
+  var fileInput  = document.getElementById('fileInput'); // optional (upload removed)
+  var viewToggle = document.getElementById('viewToggle');
+  var statusEl   = document.getElementById('status');
 
     var listView = document.getElementById('listView');
     var tableView = document.getElementById('tableView');
@@ -12,7 +12,8 @@
     var listEl = document.getElementById('asteroidList');
     var tableBody = document.querySelector('#asteroidTable tbody');
 
-    if (!fileInput || !viewToggle || !statusEl || !listEl || !tableBody) {
+    // fileInput is optional; the rest are required
+    if (!viewToggle || !statusEl || !listEl || !tableBody) {
       throw new Error('Missing required DOM elements. Check IDs in index.html.');
     }
 
@@ -117,7 +118,8 @@
   } catch (e) {
     console.warn('[DEBUG] initial hide failed (element missing?):', e);
   }
-  fileInput.addEventListener('change', function (e) {
+  if (fileInput) {
+    fileInput.addEventListener('change', function (e) {
       var file = (e.target.files && e.target.files[0]) ? e.target.files[0] : null;
       if (!file) return;
   console.log('[DEBUG] file selected:', file.name);
@@ -166,6 +168,7 @@
       };
       reader.readAsText(file);
     });
+  }
 
     // -------- rendering ----------
     function render(rows) {
