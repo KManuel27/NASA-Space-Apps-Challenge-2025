@@ -4,36 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meteor Madness</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='site_base.css') }}" />
 </head>
 <body>
-    <header class="site-header">
-        <!-- Hidden title for accessibility (won’t show visually) -->
-        <h1 class="site-title sr-only">Meteor Madness</h1>
-
-        <nav class="tabs" role="tablist">
-            <button role="tab" aria-selected="true" data-tab="home">Home</button>
-            <button role="tab" aria-selected="false" data-tab="about">About</button>
-            <button role="tab" aria-selected="false" data-tab="references">References</button>
-            <button role="tab" aria-selected="false" data-tab="discussions">Discussions</button>
-        </nav>
-
-        <div class="site-controls">
-            <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
-        </div>
-    </header>
-
     <div class="page-wrapper">
-        <main class="main-content full-height">
+        <header class="site-header">
+            <!-- Hidden title for accessibility -->
+            <h1 class="site-title sr-only">Meteor Madness</h1>
 
+            <nav class="tabs" role="tablist">
+                <button role="tab" aria-selected="true" data-tab="home">Home</button>
+                <button role="tab" aria-selected="false" data-tab="about">About</button>
+                <button role="tab" aria-selected="false" data-tab="references">References</button>
+                <button role="tab" aria-selected="false" data-tab="discussions">Discussions</button>
+            </nav>
+
+            <div class="site-controls">
+                <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
+            </div>
+        </header>
+
+        <main class="main-content">
             <section id="tab-home" class="tab-panel home-tab">
-                <!-- CRASH branding -->
                 <div class="crash-branding">
                     <div class="crash-logo">
-                    <!-- Placeholder for your logo -->
                         <img src="https://raw.githubusercontent.com/KManuel27/NASA-Space-Apps-Challenge-2025/main/templates/CRASHLogoNoBG.png" alt="CRASH Logo" />
                     </div>
                     <div class="crash-title">
+                        <h1>CRASH</h1>
                         <p class="crash-subtitle">Celestial Risk Assessment and Safety Hub</p>
                     </div>
                 </div>
@@ -61,11 +59,11 @@
             </section>
         </main>
 
-    <footer class="site-footer">
-        <div>Credits: NASA Space Apps Challenge demo — Placeholder</div>
-    </footer>
-</div>
+        <footer class="site-footer">
+            <div>Credits: NASA Space Apps Challenge demo — Placeholder</div>
+        </footer>
+    </div>
 
-        <script src="{{ url_for('static', filename='site_common.js') }}"></script>
+    <script src="{{ url_for('static', filename='site_common.js') }}"></script>
 </body>
 </html>

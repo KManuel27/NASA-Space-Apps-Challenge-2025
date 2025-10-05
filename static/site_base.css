@@ -21,7 +21,9 @@ html.theme-dark body {
 }
 
 /* set consistent site font */
-body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; 
+  padding-top: calc(var(--header-height) + 0.5rem); 
+}
 
 /* --- Header layout with left-aligned tabs --- */
 .site-header {
@@ -76,11 +78,6 @@ body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-se
   flex-shrink: 0;
 }
 
-/* Adjust body padding so content starts below header */
-body {
-  padding-top: calc(var(--header-height) + 0.5rem);
-}
-
 html.theme-light .site-header{ background: var(--header-light); color: var(--text-light); }
 html.theme-dark .site-header{ background: var(--header-dark); color: var(--text-dark); }
 
@@ -98,25 +95,31 @@ html.theme-dark .site-controls button{
 /* Push page content below the header */
 body{ padding-top: calc(var(--header-height) + 0.5rem); transition: background 200ms ease, color 200ms ease; }
 
-.main-content{ max-width: 1100px; margin: 0 auto; padding: 1rem; }
+.main-content { 
+  flex: 1;                  /* take up remaining space */
+  display: flex;            /* enable flex layout */
+  flex-direction: column;   /* arrange children vertically */
+  max-width: 1100px; 
+  margin: 0 auto; 
+  padding: 1rem; 
+}
 
 .hidden{ display:none !important; }
 
-/* CRASH Branding Container */
+/* CRASH Branding Container — logo + title side by side */
 .crash-branding {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
-    text-align: center;
-    margin-bottom: 3rem;
-    gap: 0.5rem; /* smaller gap for tighter spacing */
-    padding: 2rem 1rem;
+    justify-content: center; /* keep centered */
+    gap: 20px;
+    padding: 140px 0; /* remove side padding so it's perfectly centered */
+    text-align: center; /* ensure text is centered relative to logo */
 }
 
 /* Logo */
 .crash-logo img {
-    max-width: 100%;
+    width: 250px;
     height: auto;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
@@ -127,41 +130,31 @@ body{ padding-top: calc(var(--header-height) + 0.5rem); transition: background 2
     transform: rotate(-5deg) scale(1.05);
 }
 
-/* Title */
-.crash-title {
-    font-family: 'Poppins', sans-serif;
-    text-align: center;
-    margin-bottom: 0.25rem; /* slightly smaller margin for subtitle */
-}
-
+/* Title & subtitle */
 .crash-title h1 {
-    font-size: 4rem;        /* larger title */
-    font-weight: 900;
-    letter-spacing: 2px;
     margin: 0;
-    background: linear-gradient(90deg, #0ea5e9, #3b82f6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    line-height: 1.1;
-    text-transform: uppercase;
+    font-size: 8rem;              /* bigger font size */
+    color: var(--accent);         /* use your blue accent */
+    font-weight: 800; 
 }
 
-/* Subtitle */
 .crash-subtitle {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.5rem;      /* slightly bigger subtitle for balance */
-    font-weight: 400;
-    color: var(--text-secondary);
-    margin-top: 0.25rem;
-    line-height: 1.4;
-    text-align: center;
-    text-decoration: none;  /* remove underline */
-    position: relative;
+    margin: 10px 0 0 0;
+    font-size: 1.5rem;
+    color: var(--accent-dark);   /* a darker blue for contrast */
+    font-weight: 500;
 }
 
-/* Remove hover underline completely */
-.crash-subtitle::after {
-    display: none;
+/* Start button */
+.start-button-wrapper {
+    text-align: center;          /* center the button below */
+    margin-top: 30px;
+}
+
+.start-button-wrapper .primary {
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    cursor: pointer;
 }
 
 /* Tidy default buttons used across templates */
@@ -187,7 +180,7 @@ button.primary:focus{ outline: 3px solid rgba(14,165,255,0.18); }
 .page-wrapper {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - var(--header-height));
+  min-height: 100vh;
 }
 
 /* Let main fill all available space (above footer) */
@@ -241,8 +234,12 @@ input, select, textarea { color: inherit; background: transparent; border: 1px s
   border-color: rgba(0,0,0,0.08);
 }
 
-/* Footer spacing */
-.site-footer{ text-align:center; padding:1rem; margin-top:2rem; color: inherit; }
+.site-footer {
+  margin-top: auto; /* pushes footer to bottom if content is short */
+  text-align: center;
+  padding: 1rem;
+  color: inherit;
+}
 
 /* Plotly visual tweaks: prefer transparent background and inherit text colour */
 .js-plotly-plot{ background: transparent !important; }
@@ -322,7 +319,6 @@ html.theme-dark .site-header{ background: var(--header-dark); }
 .site-inner{ max-width: 1100px; margin: 0 auto; display:flex; align-items:center; justify-content:space-between; padding: 0 1rem; width:100%; }
 
 /* Ensure the map sits below the header and fills the remaining viewport */
-body{ padding-top: calc(var(--header-height) + 0.5rem); }
 #map{ height: calc(100vh - var(--header-height)) !important; width:100%; }
 
 /* Floating & leaflet control theme helpers */
@@ -331,3 +327,21 @@ body{ padding-top: calc(var(--header-height) + 0.5rem); }
 
 /* Ensure templates include site_common.js for shared behaviour */
 /* Add in templates: <script src="{{ url_for('static', filename='site_common.js') }}"></script> */
+
+/* Site branding in header: logo + title side by side */
+.site-branding {
+  display: flex;
+  align-items: center; /* vertically center logo with text */
+  gap: 1rem;           /* space between logo and title */
+}
+
+.site-branding .site-logo img {
+  width: 40px;         /* adjust as needed */
+  height: auto;
+  border-radius: 6px;  /* optional rounded corners */
+}
+
+.site-branding .site-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
