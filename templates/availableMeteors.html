@@ -9,15 +9,14 @@
 </head>
 <body>
   <header class="site-header">
-    <h1 class="site-title"><a href="/">Meteor Madness</a></h1>
+    <button class="back-button" onclick="history.back()">← Back</button>
+
     <div class="site-controls">
       <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
     </div>
   </header>
 
   <h1>Hazardous Asteroids Viewer 🛰️</h1>
-
-  
 
   <div class="controls">
     <form id="dateForm" method="get" action="/available_meteors">

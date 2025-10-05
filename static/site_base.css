@@ -113,13 +113,13 @@ body{ padding-top: calc(var(--header-height) + 0.5rem); transition: background 2
     align-items: center;
     justify-content: center; /* keep centered */
     gap: 20px;
-    padding: 140px 0; /* remove side padding so it's perfectly centered */
+    padding: 120px 0; /* remove side padding so it's perfectly centered */
     text-align: center; /* ensure text is centered relative to logo */
 }
 
 /* Logo */
 .crash-logo img {
-    width: 250px;
+    width: 280px;
     height: auto;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
@@ -148,13 +148,31 @@ body{ padding-top: calc(var(--header-height) + 0.5rem); transition: background 2
 /* Start button */
 .start-button-wrapper {
     text-align: center;          /* center the button below */
-    margin-top: 30px;
+    position: relative;
+    bottom: 20px;
 }
 
 .start-button-wrapper .primary {
     padding: 12px 30px;
     font-size: 1.2rem;
     cursor: pointer;
+}
+
+.site-title a {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* space between logo and text */
+    text-decoration: none;
+}
+
+.crash-logo {
+    height: 50px; /* adjust as needed */
+}
+
+.crash-text {
+    color: var(--accent);
+    font-size: 1.5rem;
+    font-weight: bold;
 }
 
 /* Tidy default buttons used across templates */
@@ -232,13 +250,6 @@ input, select, textarea { color: inherit; background: transparent; border: 1px s
   background: var(--accent);
   color: white;
   border-color: rgba(0,0,0,0.08);
-}
-
-.site-footer {
-  margin-top: auto; /* pushes footer to bottom if content is short */
-  text-align: center;
-  padding: 1rem;
-  color: inherit;
 }
 
 /* Plotly visual tweaks: prefer transparent background and inherit text colour */
@@ -328,20 +339,29 @@ html.theme-dark .site-header{ background: var(--header-dark); }
 /* Ensure templates include site_common.js for shared behaviour */
 /* Add in templates: <script src="{{ url_for('static', filename='site_common.js') }}"></script> */
 
-/* Site branding in header: logo + title side by side */
-.site-branding {
-  display: flex;
-  align-items: center; /* vertically center logo with text */
-  gap: 1rem;           /* space between logo and title */
-}
-
-.site-branding .site-logo img {
-  width: 40px;         /* adjust as needed */
-  height: auto;
-  border-radius: 6px;  /* optional rounded corners */
-}
-
-.site-branding .site-title {
+.back-button {
+  border: none;                  /* no border */
+  outline: none;                 /* remove default focus outline */
+  background-color: var(--accent);  /* main blue color */
+  color: white;                  /* text color */
+  cursor: pointer;
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 600;
+  padding: 12px 30px;            /* bigger padding for a pill shape */
+  border-radius: 999px;          /* fully rounded */
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.back-button:hover {
+  background-color: #0056b3;     /* darker blue on hover */
+  transform: translateY(-2px);   /* subtle lift effect */
+}
+
+.back-button:active {
+  transform: translateY(0);      /* reset when clicked */
+}
+
+.back-button:focus {
+  outline: none;                 /* remove keyboard focus outline */
+  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.4); /* optional subtle focus ring for accessibility */
 }
