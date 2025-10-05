@@ -299,8 +299,10 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
         ),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         # add right margin to leave room for the info sidebar
-        margin=dict(l=0, r=380, t=30, b=0), height=720,
-        title=f"Sun – Earth – {label}", showlegend=True,
+        margin=dict(l=0, r=380, t=30, b=0),
+        height=720,
+        title=f"Sun – Earth – {label}",
+        showlegend=True,
         # legend acts as the key for traces (orbits and Sun)
         legend=dict(
             orientation='v',
@@ -330,14 +332,38 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
                 ]
             )
         ],
-        sliders=[dict(steps=slider_steps, active=0, x=0.1, y=-0.05, len=0.8,
-                      currentvalue=dict(prefix='Current Date: ', visible=True), pad=dict(b=20, t=40))]
+        sliders=[
+            dict(
+                steps=slider_steps,
+                active=0,
+                x=0.1, y=-0.05,
+                len=0.8,
+                currentvalue=dict(prefix='Current Date: ', visible=True),
+                pad=dict(b=20, t=40)
+            )
+        ]
     )
 
     fig.frames = frames
 
     # Return an HTML fragment without including the Plotly.js script (template already has it)
     html_fragment = pio.to_html(fig, include_plotlyjs=False, full_html=False)
+
+    # Ensure the animation is paused on load: append a small script that cancels any autoplay
+    stop_script = '''
+<script>
+  (function(){
+    function stopAnimation(){
+      var gd = document.querySelector('.js-plotly-plot');
+      if(!gd || typeof Plotly === 'undefined') return;
+      try{ Plotly.animate(gd, [], {mode:'immediate'}); }catch(e){}
+    }
+    window.addEventListener('load', function(){ setTimeout(stopAnimation, 120); });
+    setTimeout(stopAnimation, 500);
+  })();
+</script>
+'''
+    html_fragment += stop_script
     return html_fragment
 
 
