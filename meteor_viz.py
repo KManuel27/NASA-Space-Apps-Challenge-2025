@@ -179,8 +179,29 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
     asteroid_sets.append((pos_anim, pos_full, color, label))
 
     # Create plotly figure (single scene, interactive) with animation frames and a slider
-    # axis range (extend to include Jupiter)
-    axis_range = 6.0 * AU
+    # Compute an axis range that fits the outermost orbit (planets or asteroid)
+    # so the largest orbit (e.g., Jupiter) appears near the edge while keeping
+    # Earth, other planets and the asteroid comfortably visible.
+    # derive radii from full-orbit samples
+    try:
+        max_planet_radius = max(np.max(np.linalg.norm(ps_full, axis=1)) for (_pa, ps_full, _pc, _pn) in planet_sets)
+    except Exception:
+        max_planet_radius = 3.0 * AU
+
+    try:
+        # compute max radius per asteroid full-orbit sample and take the maximum
+        asteroid_radii = [np.max(np.linalg.norm(ast_full, axis=1))
+                          for (ast_anim, ast_full, _ac, _al) in asteroid_sets]
+        max_asteroid_radius = max(asteroid_radii) if asteroid_radii else 0.0
+    except Exception:
+        max_asteroid_radius = 0.0
+
+    earth_radius = float(np.max(np.linalg.norm(earth_positions, axis=1))) if earth_positions.size else 1.0 * AU
+
+    # take the largest radius and add a small padding
+    max_radius = max(max_planet_radius, max_asteroid_radius, earth_radius, 3.0 * AU)
+    axis_range = float(max_radius * 1.08)
+
     hidden_axis = dict(
         range=[-axis_range, axis_range], showbackground=False, showgrid=False,
         showticklabels=False, zeroline=False, color='white', title={'text': ''}
@@ -294,8 +315,16 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
         scene=dict(
             xaxis=hidden_axis, yaxis=hidden_axis, zaxis=hidden_axis,
             aspectmode='manual', aspectratio=dict(x=1, y=1, z=0.4),
-            # pull the camera back so outer planets (Jupiter) are visible
-            camera=dict(eye=dict(x=3.6, y=3.6, z=1.4))
+            # set a stable, normalized camera view so "zoom" and angle are
+            # controlled consistently regardless of absolute data units.
+            # These normalized eye values place Jupiter's orbit near the frame
+            # edge while keeping inner planets and the asteroid visible.
+            camera=dict(
+                eye=dict(x=0.6, y=0.6, z=0.6),
+                center=dict(x=0, y=0, z=0),
+                up=dict(x=0, y=0, z=1),
+                projection=dict(type='perspective')
+            )
         ),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         # add right margin to leave room for the info sidebar
