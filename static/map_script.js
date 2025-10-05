@@ -1,185 +1,153 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Dynamic Asteroid Impact Demo (Auto Population)</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+// Boot Leaflet
+const map = L.map('map', { zoomControl: true }).setView([51.5074, -0.1278], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
-    #map { height: 100vh; width: 100%; }
-    .input-panel {
-      position: absolute; top: 10px; left: 10px;
-      background: white; padding: 10px; border-radius: 8px;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      z-index: 1000; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-    }
-    .input-panel label { display:block; margin: 6px 0; }
-    .muted { color:#666; font-size:12px; }
-    .share-buttons { margin-top:8px; font-size:0.9em; }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
+// Ensure correct sizing after header layout
+window.addEventListener('load', () => setTimeout(() => map.invalidateSize(), 50));
 
-  <div class="input-panel">
-    <label>Diameter (m): <input id="diam" type="number" value="140" min="1"></label>
-    <label>Velocity (km/s): <input id="vel" type="number" value="19" min="1"></label>
-    <label>Density (kg/m³): <input id="dens" type="number" value="3000" min="100"></label>
-    <div class="muted">Population auto-detected by nearest place (OSM). Rates are typical defaults by place type.</div>
-  </div>
+let blastLayers = [];
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    const map = L.map('map').setView([40.7128, -74.0060], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+// Physics
+function calcEnergyAndRings(diameter_m, velocity_kms, density){
+  const r = diameter_m/2;
+  const vol = (4/3)*Math.PI*Math.pow(r,3);
+  const mass = density*vol;
+  const v = velocity_kms*1000; // m/s
+  const E = 0.5*mass*v*v;      // J
+  const mt = E/4.184e15;       // megatons TNT
 
-    let blastLayers = [];
+  // Cube-root scaling for overpressure bands
+  const r20km = 1.2*Math.cbrt(mt); // km, 20 psi severe
+  const r5km  = 3.2*Math.cbrt(mt); // km, 5 psi moderate
+  const r1km  = 7.0*Math.cbrt(mt); // km, 1 psi light
 
-    // --- Physics helpers ---
-    function calcEnergyAndRings(diameter_m, velocity_kms, density){
-      const r = diameter_m/2;
-      const vol = (4/3)*Math.PI*Math.pow(r,3);
-      const mass = density*vol;
-      const v = velocity_kms*1000; // m/s
-      const E = 0.5*mass*v*v;      // J
-      const mt = E/4.184e15;       // megatons TNT
+  return {E, mt, rings_m:[r20km*1000, r5km*1000, r1km*1000]};
+}
 
-      // Cube-root scaling for overpressure bands
-      const r20km = 1.2*Math.cbrt(mt); // km, 20 psi severe
-      const r5km  = 3.2*Math.cbrt(mt); // km, 5 psi moderate
-      const r1km  = 7.0*Math.cbrt(mt); // km, 1 psi light
+const densityByPlaceType = {
+  city: 10000, metropolis: 12000, town: 3000, suburb: 4000,
+  borough: 8000, quarter: 6000, village: 500, hamlet: 200,
+  isolated_dwelling: 50, neighbourhood: 6000, neighbourhoods: 6000
+};
 
-      return {E, mt, rings_m:[r20km*1000, r5km*1000, r1km*1000]};
-    }
+function prettyNumber(n){ return Number(n).toLocaleString(undefined, {maximumFractionDigits:0}); }
+function areaKm2(r_m){ return Math.PI * Math.pow(r_m/1000, 2); }
 
-    // Default density by OSM place "type"
-    const densityByPlaceType = {
-      city: 10000, metropolis: 12000, town: 3000, suburb: 4000,
-      borough: 8000, quarter: 6000, village: 500, hamlet: 200,
-      isolated_dwelling: 50, neighbourhood: 6000, neighbourhoods: 6000
-    };
+async function getElevation(lat, lon){
+  try {
+    const url = `https://api.open-elevation.com/api/v1/lookup?locations=${lat},${lon}`;
+    const res = await fetch(url);
+    if(!res.ok) return null;
+    const js = await res.json();
+    return js.results?.[0]?.elevation ?? null;
+  } catch { return null; }
+}
 
-    function prettyNumber(n){ return n.toLocaleString(undefined, {maximumFractionDigits:0}); }
+async function getPlaceInfo(lat, lon){
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
+    const res = await fetch(url, { headers: { "Accept": "application/json" }});
+    if(!res.ok) return { name:'Unknown', placeType:'city', density:3000 };
+    const js = await res.json();
+    const name = js.name || js.display_name?.split(",")[0] || "Nearest place";
+    const type = (js.type || js.category || "city").toLowerCase();
+    const density = densityByPlaceType[type] ?? 3000;
+    return { name, placeType: type, density };
+  } catch { return { name:'Unknown', placeType:'city', density:3000 }; }
+}
 
-    // Fetch elevation (Open-Elevation)
-    async function getElevation(lat, lon){
-      const url = `https://api.open-elevation.com/api/v1/lookup?locations=${lat},${lon}`;
-      const res = await fetch(url);
-      if(!res.ok) throw new Error("Elevation API error");
-      const js = await res.json();
-      return js.results?.[0]?.elevation ?? null;
-    }
+function drawRings(lat, lon, rings_m){
+  const colors = ["red","orange","yellow"];
+  const layers = [];
+  rings_m.forEach((r, i) => {
+    layers.push(L.circle([lat, lon], {
+      radius: r, color: colors[i], weight: 2, fillOpacity: 0.1
+    }).addTo(map));
+  });
+  return layers;
+}
 
-    // Reverse geocode to find nearest place + type (Nominatim/OSM)
-    async function getPlaceInfo(lat, lon){
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
-      const res = await fetch(url, { headers: { "Accept": "application/json" }});
-      if(!res.ok) throw new Error("Nominatim error");
-      const js = await res.json();
+// Social sharing
+function buildShareURL(lat, lon, mt){
+  const base = window.location.href.split('?')[0];
+  const url = `${base}?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}&energy=${mt.toFixed(2)}`;
+  const text = `Asteroid impact at ${lat.toFixed(2)}, ${lon.toFixed(2)} with energy ${mt.toFixed(2)} Mt TNT!`;
+  return {
+    twitter:  `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+    linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`,
+    whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(text + " " + url)}`
+  };
+}
 
-      const name = js.name || js.display_name?.split(",")[0] || "Nearest place";
-      const placeType = js.type || js.category || "city";
-      const density = densityByPlaceType[placeType] ?? 3000;
+// Click to simulate
+map.on('click', async (e) => {
+  const lat = e.latlng.lat, lon = e.latlng.lng;
+  blastLayers.forEach(l => map.removeLayer(l));
+  blastLayers = [];
 
-      return { name, placeType, density };
-    }
+  const d = parseFloat(document.getElementById('diam').value || "0");
+  const v = parseFloat(document.getElementById('vel').value || "0");
+  const rho = parseFloat(document.getElementById('dens').value || "3000");
 
-    // Draw blast rings
-    function drawRings(lat, lon, rings_m){
-      const colors = ["red","orange","yellow"];
-      const layers = [];
-      rings_m.forEach((r, i) => {
-        const circle = L.circle([lat, lon], {
-          radius: r, color: colors[i], weight: 2, fillOpacity: 0.1
-        }).addTo(map);
-        layers.push(circle);
-      });
-      return layers;
-    }
+  const [elev, place] = await Promise.all([
+    getElevation(lat, lon).catch(() => null),
+    getPlaceInfo(lat, lon).catch(() => ({name:"Unknown", placeType:"city", density:3000}))
+  ]);
 
-    function areaKm2(r_m){ return Math.PI * Math.pow(r_m/1000, 2); }
+  const {E, mt, rings_m} = calcEnergyAndRings(d, v, rho);
+  blastLayers = drawRings(lat, lon, rings_m);
 
-    // --- Social sharing helper ---
-    function buildShareURL(lat, lon, mt){
-      const base = window.location.href.split('?')[0];
-      const url = `${base}?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}&energy=${mt.toFixed(2)}`;
-      const text = `Asteroid impact at ${lat.toFixed(2)}, ${lon.toFixed(2)} with energy ${mt.toFixed(2)} Mt TNT!`;
+  const pop20 = Math.round(areaKm2(rings_m[0]) * place.density);
+  const pop5  = Math.round(areaKm2(rings_m[1]) * place.density);
+  const pop1  = Math.round(areaKm2(rings_m[2]) * place.density);
 
-      return {
-        twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
-        facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-        linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`,
-        whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(text + " " + url)}`
-      };
-    }
+  const share = buildShareURL(lat, lon, mt);
+  const shareHtml = `
+    <div class="share-buttons" style="margin-top:8px;font-size:0.9em">
+      <b>Share:</b><br>
+      <a href="${share.twitter}" target="_blank">🐦 Twitter</a> |
+      <a href="${share.facebook}" target="_blank">📘 Facebook</a> |
+      <a href="${share.linkedin}" target="_blank">💼 LinkedIn</a> |
+      <a href="${share.whatsapp}" target="_blank">📱 WhatsApp</a>
+    </div>
+  `;
 
-    // --- Main map click handler ---
-    map.on('click', async (e) => {
-      const lat = e.latlng.lat, lon = e.latlng.lng;
-      blastLayers.forEach(l => map.removeLayer(l));
-      blastLayers = [];
+  const html = `
+    <b>Impact Point</b><br>
+    ${lat.toFixed(4)}, ${lon.toFixed(4)}<br>
+    Elevation: ${elev===null ? "n/a" : elev + " m"}<br>
+    Nearest: ${place.name} <span class="muted">(${place.placeType})</span><br>
+    Assumed pop. density: ${prettyNumber(place.density)} / km²<br><br>
 
-      const d = parseFloat(document.getElementById('diam').value || "0");
-      const v = parseFloat(document.getElementById('vel').value || "0");
-      const rho = parseFloat(document.getElementById('dens').value || "3000");
+    <b>Asteroid</b><br>
+    Energy: ${mt.toFixed(2)} Mt TNT<br>
+    20 psi radius: ${(rings_m[0]/1000).toFixed(1)} km<br>
+    5 psi radius: ${(rings_m[1]/1000).toFixed(1)} km<br>
+    1 psi radius: ${(rings_m[2]/1000).toFixed(1)} km<br><br>
 
-      try {
-        const [elev, place] = await Promise.all([
-          getElevation(lat, lon).catch(() => null),
-          getPlaceInfo(lat, lon).catch(() => ({name:"Unknown", placeType:"city", density:3000}))
-        ]);
+    <b>Estimated population affected</b><br>
+    20 psi (severe): ~${prettyNumber(pop20)}<br>
+    5  psi (moderate): ~${prettyNumber(pop5)}<br>
+    1  psi (light): ~${prettyNumber(pop1)}<br><br>
+    ${shareHtml}
+  `;
+  L.popup().setLatLng(e.latlng).setContent(html).openOn(map);
+});
 
-        const {E, mt, rings_m} = calcEnergyAndRings(d, v, rho);
-        blastLayers = drawRings(lat, lon, rings_m);
+// Optional: auto-load scenario from query string (?lat&lon&d&v&rho)
+function qp(k){ return new URLSearchParams(window.location.search).get(k); }
+const qlat = parseFloat(qp('lat')), qlon = parseFloat(qp('lon'));
+const qd = parseFloat(qp('d')), qv = parseFloat(qp('v')), qrho = parseFloat(qp('rho'));
+window.addEventListener('load', () => {
+  if (!isNaN(qd))  document.getElementById('diam').value = qd;
+  if (!isNaN(qv))  document.getElementById('vel').value  = qv;
+  if (!isNaN(qrho))document.getElementById('dens').value = qrho;
+  if (!isNaN(qlat) && !isNaN(qlon)) {
+    map.setView([qlat, qlon], 9);
+    map.fire('click', { latlng: L.latLng(qlat, qlon) });
+  }
+});
 
-        const pop20 = Math.round(areaKm2(rings_m[0]) * place.density);
-        const pop5  = Math.round(areaKm2(rings_m[1]) * place.density);
-        const pop1  = Math.round(areaKm2(rings_m[2]) * place.density);
-
-        const share = buildShareURL(lat, lon, mt);
-        const shareHtml = `
-          <div class="share-buttons">
-            <b>Share:</b><br>
-            <a href="${share.twitter}" target="_blank">🐦 Twitter</a> |
-            <a href="${share.facebook}" target="_blank">📘 Facebook</a> |
-            <a href="${share.linkedin}" target="_blank">💼 LinkedIn</a> |
-            <a href="${share.whatsapp}" target="_blank">📱 WhatsApp</a>
-          </div>
-        `;
-
-        const html = `
-          <b>Impact Point</b><br>
-          ${lat.toFixed(4)}, ${lon.toFixed(4)}<br>
-          Elevation: ${elev===null ? "n/a" : elev + " m"}<br>
-          Nearest: ${place.name} <span class="muted">(${place.placeType})</span><br>
-          Assumed pop. density: ${prettyNumber(place.density)} / km²<br><br>
-
-          <b>Asteroid</b><br>
-          Energy: ${mt.toFixed(2)} Mt TNT<br>
-          20 psi radius: ${(rings_m[0]/1000).toFixed(1)} km<br>
-          5 psi radius: ${(rings_m[1]/1000).toFixed(1)} km<br>
-          1 psi radius: ${(rings_m[2]/1000).toFixed(1)} km<br><br>
-
-          <b>Estimated population affected</b><br>
-          20 psi (severe): ~${prettyNumber(pop20)}<br>
-          5  psi (moderate): ~${prettyNumber(pop5)}<br>
-          1  psi (light): ~${prettyNumber(pop1)}<br><br>
-
-          ${shareHtml}
-        `;
-
-        L.popup().setLatLng(e.latlng).setContent(html).openOn(map);
-
-      } catch (err) {
-        console.error(err);
-        L.popup().setLatLng(e.latlng)
-          .setContent("Error fetching elevation/place info. Try again.")
-          .openOn(map);
-      }
-    });
-  </script>
-</body>
-</html>
