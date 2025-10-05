@@ -27,8 +27,17 @@
         <main class="main-content full-height">
 
             <section id="tab-home" class="tab-panel home-tab">
-                <h2>Home</h2>
-                <p>Placeholder</p>
+                <!-- CRASH branding -->
+                <div class="crash-branding">
+                    <div class="crash-logo">
+                    <!-- Placeholder for your logo -->
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="CRASH Logo" />
+                    </div>
+                    <div class="crash-title">
+                        <h1>CRASH</h1>
+                        <p class="crash-subtitle">Celestial Risk Assessment and Safety Hub</p>
+                    </div>
+                </div>
 
                 <div class="start-button-wrapper">
                     <button class="primary" onclick="window.location.href='/available_meteors'">

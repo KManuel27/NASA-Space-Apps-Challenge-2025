@@ -102,6 +102,68 @@ body{ padding-top: calc(var(--header-height) + 0.5rem); transition: background 2
 
 .hidden{ display:none !important; }
 
+/* CRASH Branding Container */
+.crash-branding {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 3rem;
+    gap: 0.5rem; /* smaller gap for tighter spacing */
+    padding: 2rem 1rem;
+}
+
+/* Logo */
+.crash-logo img {
+    width: 120px;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    transition: transform 0.3s ease;
+}
+
+.crash-logo img:hover {
+    transform: rotate(-5deg) scale(1.05);
+}
+
+/* Title */
+.crash-title {
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+    margin-bottom: 0.25rem; /* slightly smaller margin for subtitle */
+}
+
+.crash-title h1 {
+    font-size: 4rem;        /* larger title */
+    font-weight: 900;
+    letter-spacing: 2px;
+    margin: 0;
+    background: linear-gradient(90deg, #0ea5e9, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+    text-transform: uppercase;
+}
+
+/* Subtitle */
+.crash-subtitle {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.5rem;      /* slightly bigger subtitle for balance */
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+    line-height: 1.4;
+    text-align: center;
+    text-decoration: none;  /* remove underline */
+    position: relative;
+}
+
+/* Remove hover underline completely */
+.crash-subtitle::after {
+    display: none;
+}
+
 /* Tidy default buttons used across templates */
 button.primary{ display:inline-block; background-image: linear-gradient(90deg,var(--accent), var(--accent-dark)) !important; background-color: var(--accent-dark) !important; color: #fff !important; -webkit-text-fill-color: #fff !important; border: none; padding: 0.7rem 1.2rem; border-radius: 10px; cursor: pointer; font-weight:600; font-size:1rem; text-shadow: none !important; }
 
