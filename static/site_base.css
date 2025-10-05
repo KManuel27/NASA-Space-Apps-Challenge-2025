@@ -341,20 +341,20 @@ html.theme-dark .site-header{ background: var(--header-dark); }
 /* Add in templates: <script src="{{ url_for('static', filename='site_common.js') }}"></script> */
 
 .back-button {
-  border: none;                  /* no border */
-  outline: none;                 /* remove default focus outline */
-  background-color: var(--accent);  /* main blue color */
-  color: white;                  /* text color */
+  border: none;                  
+  outline: none;                 
+  background-color: var(--accent);
+  color: white;                  
   cursor: pointer;
   font-size: 1.2rem;
   font-weight: 600;
-  padding: 12px 30px;            /* bigger padding for a pill shape */
-  border-radius: 999px;          /* fully rounded */
+  padding: 12px 30px;            
+  border-radius: 999px;         
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .back-button:hover {
-  background-image: linear-gradient(90deg, #0ea5e9, #0369a1); /* Gradient */
+  background-image: linear-gradient(90deg, #0ea5e9, #0369a1);
   background-color: #0369a1; /* Fallback solid color */
   transform: translateY(-2px);   /* subtle lift effect */
 }
@@ -364,6 +364,58 @@ html.theme-dark .site-header{ background: var(--header-dark); }
 }
 
 .back-button:focus {
-  outline: none;                 /* remove keyboard focus outline */
-  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.4); /* optional subtle focus ring for accessibility */
+  outline: none;                
+  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.4); 
 }
+
+#tab-about h2 {
+  font-size: 3rem;        
+  color: #0ea5e9;      
+  margin-bottom: 1rem;    
+  text-align: center;     
+}
+
+#tab-about h3 {
+  font-size: 1.5rem;        
+  color: #0ea5e9;  
+  margin-bottom: 1rem;
+}
+
+#tab-references h2 {
+  font-size: 3rem;
+  color: #0ea5e9;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.references-list {
+  list-style-type: disc;
+  margin-left: 2rem;
+  line-height: 1.6;
+  color: #ffffff;
+  font-size: 1.5rem;
+}
+
+.references-list a {
+  color: #0369a1;
+  text-decoration: none;
+}
+
+.references-list a:hover {
+  text-decoration: underline;
+}
+
+#tab-help h2 {
+  color: #0ea5e9;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+#tab-help p {
+  color: #ffffff;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
