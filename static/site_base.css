@@ -119,7 +119,7 @@ body{ padding-top: calc(var(--header-height) + 0.5rem); transition: background 2
 
 /* Logo */
 .crash-logo img {
-    width: 280px;
+    width: 350px;
     height: auto;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
@@ -166,7 +166,7 @@ body{ padding-top: calc(var(--header-height) + 0.5rem); transition: background 2
 }
 
 .crash-logo {
-    height: 50px; /* adjust as needed */
+    height: 300px; /* adjust as needed */
 }
 
 .crash-text {
@@ -244,6 +244,7 @@ input, select, textarea { color: inherit; background: transparent; border: 1px s
   padding: 0.4rem 0.8rem;
   border-radius: 6px;
   background: transparent;
+  font-size: 1rem;
 }
 [role="tab"]:focus{ outline: 2px solid rgba(14,165,255,0.25); }
 [role="tab"][aria-selected="true"]{
@@ -353,7 +354,8 @@ html.theme-dark .site-header{ background: var(--header-dark); }
 }
 
 .back-button:hover {
-  background-color: #0056b3;     /* darker blue on hover */
+  background-image: linear-gradient(90deg, #0ea5e9, #0369a1); /* Gradient */
+  background-color: #0369a1; /* Fallback solid color */
   transform: translateY(-2px);   /* subtle lift effect */
 }
 

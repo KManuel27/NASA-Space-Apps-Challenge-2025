@@ -16,8 +16,8 @@
     </div>
   </header>
 
-  <h1>Hazardous Asteroids Viewer 🛰️</h1>
-
+  <h1 class="viewer-title">Hazardous Asteroids Viewer</h1>
+  
   <div class="controls">
     <form id="dateForm" method="get" action="/available_meteors">
       <label>
@@ -34,36 +34,36 @@
         End:
         <input id="endDate" type="date" value="{{ end_date }}" readonly />
       </label>
-  <button id="fetchButton" name="fetch" value="1" type="submit">Fetch</button>
-      <span id="fetchSpinner" class="inline-spinner hidden" aria-hidden="true"></span>
+
+      <button id="fetchButton" name="fetch" value="1" type="submit">Fetch</button>
+
+      <label class="file">
+        <input id="fileInput" type="file" accept=".json,.csv"/>
+        <span>Upload JSON File</span>
+      </label>
+
+      <label for="filterSelect">Sort by:</label>
+      <select id="filterSelect">
+        <option value="time_to_impact">Time to impact</option>
+        <option value="hazard_score">Hazard score</option>
+        <option value="size">Size (km)</option>
+        <option value="miss_distance">Miss distance (km)</option>
+      </select>
     </form>
 
-      <!-- Loading overlay shown while a fetch/navigation is in progress -->
-      <div id="loadingOverlay" class="hidden">
-        <div class="spinner" aria-hidden="true"></div>
-        <div class="loading-text">Fetching data…</div>
-      </div>
-
-    <!-- Only for debugging -->
-    <label class="file">
-      <input id="fileInput" type="file" accept=".json,.csv"/>
-  <span>Choose JSON (Debug only)</span>
-    </label>
-    
-
-    <label for="filterSelect">Sort by:</label>
-    <select id="filterSelect">
-      <option value="time_to_impact">Time to impact</option>
-      <option value="hazard_score">Hazard score</option>
-      <option value="size">Size (km)</option>
-      <option value="miss_distance">Miss distance (km)</option>
-    </select>
-    <span id="filterSpinner" class="inline-spinner hidden" aria-hidden="true"></span>
-
     <label class="toggle">
-      <input id="viewToggle" type="checkbox"/>
-      <span>Show table view</span>
+      <input type="checkbox" id="viewToggle" />
+      <span>Table view</span>
     </label>
+
+    <span id="fetchSpinner" class="inline-spinner hidden" aria-hidden="true"></span>
+
+  </div>
+
+  <!-- Loading overlay shown while a fetch/navigation is in progress -->
+  <div id="loadingOverlay" class="hidden">
+    <div class="spinner" aria-hidden="true"></div>
+    <div class="loading-text">Fetching data…</div>
   </div>
 
   <div id="status" class="status" aria-live="polite"></div>
@@ -96,24 +96,25 @@
   <!-- cache-bust so you really load the new file -->
   <script>
     // Inject initial data from server if provided
-  {% if asteroids is defined and asteroids is not none %}
-  window.__INITIAL_ASTEROIDS__ = {{ asteroids | tojson | safe }};
-  window.__INITIAL_FETCHED__ = true;
-  {% else %}
-  window.__INITIAL_ASTEROIDS__ = null;
-  window.__INITIAL_FETCHED__ = false;
-  {% endif %}
+    {% if asteroids is defined and asteroids is not none %}
+      window.__INITIAL_ASTEROIDS__ = {{ asteroids | tojson | safe }};
+      window.__INITIAL_FETCHED__ = true;
+    {% else %}
+      window.__INITIAL_ASTEROIDS__ = null;
+      window.__INITIAL_FETCHED__ = false;
+    {% endif %}
 
-  // Prevent automatic AJAX fetches until the user explicitly clicks Fetch.
-  window.__ALLOW_AJAX_FETCH__ = false;
+    // Prevent automatic AJAX fetches until the user explicitly clicks Fetch.
+    window.__ALLOW_AJAX_FETCH__ = false;
 
     {% if error is defined and error is not none %}
-    window.__INITIAL_ERROR__ = {{ error | tojson | safe }};
+      window.__INITIAL_ERROR__ = {{ error | tojson | safe }};
     {% else %}
-    window.__INITIAL_ERROR__ = null;
+      window.__INITIAL_ERROR__ = null;
     {% endif %}
   </script>
-  <script src="../static/availableMeteors_script.js?v=5"></script>
+
+  <script src="{{ url_for('static', filename='availableMeteors_script.js') }}?v=5"></script>
   <script src="{{ url_for('static', filename='site_common.js') }}"></script>
 </body>
 </html>
