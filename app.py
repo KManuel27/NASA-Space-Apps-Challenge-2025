@@ -60,7 +60,8 @@ def visualize_asteroid(asteroid_id: str):
         "closest_approach_date": "N/A",
         "miss_distance": "N/A",
         "velocity": "N/A",
-        "risk": "N/A"
+        "risk": "N/A",
+        "_raw": {}
     }
 
     graph_html = "<p>Visualisation not available.</p>"
@@ -88,7 +89,8 @@ def visualize_asteroid(asteroid_id: str):
             "closest_approach_date": close_data.get("close_approach_date", "N/A"),
             "miss_distance": close_data.get("miss_distance", {}).get("kilometers", "N/A"),
             "velocity": close_data.get("relative_velocity", {}).get("kilometers_per_second", "N/A"),
-            "risk": "High" if obj.get("is_potentially_hazardous_asteroid") else "Minimal"
+            "risk": "High" if obj.get("is_potentially_hazardous_asteroid") else "Minimal",
+            "_raw": obj,
         }
 
     except Exception as e:
@@ -97,6 +99,7 @@ def visualize_asteroid(asteroid_id: str):
 
     # Always render with asteroid_info (even if error)
     return render_template("meteorViz.html", graph_html=graph_html, asteroid_info=asteroid_info)
+
 
 def _median_diameter_km(neo):
     try:
@@ -209,9 +212,11 @@ def available_meteors_json():
         print(f"[SERVER] JSON endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/map")
 def map_page_noid():
     return render_template("map.html", asteroid_id=None)
+ 
 
 @app.route("/map/<asteroid_id>")
 def map_page(asteroid_id: str):

@@ -136,9 +136,9 @@
                 <div style="margin-top:12px; display:flex; gap:8px;">
                     {% set aid = asteroid_info._raw.id if asteroid_info and asteroid_info._raw and asteroid_info._raw.id is defined else '' %}
                     {% if aid %}
-                    <a class="btn" href="/map/{{ aid }}">Visualize Impact</a>
+                    <a id="impactBtn" class="btn" href="/map/{{ aid }}">Visualize Impact</a>
                     {% else %}
-                    <a class="btn" href="/map">Visualize Impact</a>
+                    <a id="impactBtn" class="btn" href="/map">Visualize Impact</a>
                     {% endif %}
                 </div>
             </aside>
