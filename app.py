@@ -209,6 +209,9 @@ def available_meteors_json():
         print(f"[SERVER] JSON endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/map")
+def map_page_noid():
+    return render_template("map.html", asteroid_id=None)
 
 @app.route("/map/<asteroid_id>")
 def map_page(asteroid_id: str):
