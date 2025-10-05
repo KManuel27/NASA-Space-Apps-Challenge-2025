@@ -112,7 +112,8 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
         ("Mercury", 0.387 * AU, "lightgray"),
         ("Venus", 0.723 * AU, "goldenrod"),
         ("Mars", 1.524 * AU, "orangered"),
-        ("Jupiter", 5.203 * AU, "sandybrown"),
+        # Jupiter brought 50% closer for visual purposes
+        ("Jupiter", 5.203 * AU * 0.5, "sandybrown"),
     ]
 
     planet_sets = []
@@ -209,6 +210,25 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
 
     fig = go.Figure()
 
+    # Background stars (placed first so they act as a subtle backdrop around planets)
+    try:
+        stars_count = 400
+        rng = np.random.default_rng(42)
+        # distribute stars across the full 3D scene volume so they don't appear
+        # as a flat band; use the same axis_range in x,y,z so stars fill the view
+        xs = rng.uniform(-axis_range * 0.95, axis_range * 0.95, stars_count)
+        ys = rng.uniform(-axis_range * 0.95, axis_range * 0.95, stars_count)
+        zs = rng.uniform(-axis_range * 0.95, axis_range * 0.95, stars_count)
+        # single small size for simplicity (keeps render cheap)
+        fig.add_trace(go.Scatter3d(
+            x=xs, y=ys, z=zs,
+            mode='markers',
+            marker=dict(size=1.8, color='white', opacity=0.9),
+            showlegend=False
+        ))
+    except Exception:
+        pass
+
     # Static traces: Sun marker, Earth full orbit, Asteroid full orbit
     # Sun (legend enabled)
     fig.add_trace(go.Scatter3d(x=[0], y=[0], z=[0], mode='markers',
@@ -239,6 +259,8 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
         fig.add_trace(go.Scatter3d(x=[], y=[], z=[], mode='lines', line=dict(color=pcolor, width=1),
                                    name=f'{pname} Trail', showlegend=False))
 
+    # (Background stars are added earlier as a backdrop; no additional stars here)
+
     # Asteroid full orbit
     for (pos_anim, pos_full, color, label) in asteroid_sets:
         # full asteroid orbit (legend entry)
@@ -257,6 +279,12 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
     frames = []
     for k in range(len(time_seconds)):
         frame_traces = []
+        # include background stars in every frame so they remain visible
+        try:
+            frame_traces.append(dict(type='scatter3d', x=xs.tolist(), y=ys.tolist(), z=zs.tolist(),
+                                     mode='markers', marker=dict(size=1.5, color='white', opacity=0.85)))
+        except Exception:
+            pass
         # Sun (static)
         frame_traces.append(dict(type='scatter3d', x=[0], y=[0], z=[0]))
 
@@ -320,7 +348,7 @@ def simulate_sun_earth_asteroid(neo=None, days=DEFAULT_DAYS, samples=180):
             # These normalized eye values place Jupiter's orbit near the frame
             # edge while keeping inner planets and the asteroid visible.
             camera=dict(
-                eye=dict(x=0.6, y=0.6, z=0.6),
+                eye=dict(x=0.5, y=0.5, z=0.3),
                 center=dict(x=0, y=0, z=0),
                 up=dict(x=0, y=0, z=1),
                 projection=dict(type='perspective')
